@@ -1,5 +1,3 @@
-# ae-scripts
-After Effects scripts
 # AE Scripts
 
 A collection of free After Effects scripts for motion design and live concert visuals.

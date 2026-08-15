@@ -1,0 +1,9 @@
+{
+  "name": "ae-scripts",
+  "private": true,
+  "version": "1.0.0",
+  "description": "After Effects scripts / plugins / extensions and their offline test harness",
+  "scripts": {
+    "test": "node --test"
+  }
+}

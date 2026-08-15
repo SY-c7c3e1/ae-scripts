@@ -27,6 +27,17 @@ A collection of free After Effects scripts for motion design and live concert vi
 
 > To dock as a panel, place the file in the `Scripts\ScriptUI Panels\` folder and restart After Effects.
 
+## Testing
+
+ロジックはAEを起動せずにNode.jsでテストできる（詳細は [`testing/README.md`](./testing/README.md)）。
+
+```bash
+npm test
+```
+
+新しいスクリプトを追加する際は、UI(`.jsx`)とロジック(`.core.js`)を分離しておくと
+`__tests__/` にテストを追加しやすい。`MarkerCopy/` が実例。
+
 ## License
 
 Free to use for personal and commercial projects.

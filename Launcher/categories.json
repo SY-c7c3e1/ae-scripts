@@ -1,0 +1,12 @@
+{
+  "order": ["MarkerCopy", "SplitByDistance", "ExpressionToMatchName"],
+  "categories": {
+    "MarkerCopy": "マーカー",
+    "SplitByDistance": "レイヤー分割",
+    "ExpressionToMatchName": "エクスプレッション"
+  },
+  "labels": {
+    "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expression → MatchName 変換",
+    "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "元のExpressionに戻す"
+  }
+}

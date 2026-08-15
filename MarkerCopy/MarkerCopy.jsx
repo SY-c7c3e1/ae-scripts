@@ -9,6 +9,10 @@
 //
 // 「現在位置にペースト」ON時：
 //   コピーしたマーカー群の先頭がタイムラインの現在位置に来るようにシフト
+//
+// ロジック本体は MarkerCopy.core.js に分離している（Node上でのテスト対象はそちら）。
+
+#include "MarkerCopy.core.js"
 
 (function () {
 
@@ -24,71 +28,6 @@
     function getActiveComp() {
         var c = app.project.activeItem;
         return (c && c instanceof CompItem) ? c : null;
-    }
-
-    function markerValueToObj(mv) {
-        return {
-            comment:      mv.comment,
-            duration:     mv.duration,
-            chapter:      mv.chapter,
-            url:          mv.url,
-            frameTarget:  mv.frameTarget,
-            cuePointName: mv.cuePointName,
-            label:        mv.label
-        };
-    }
-
-    function buildMarkerValue(obj) {
-        var mv = new MarkerValue(obj.comment);
-        mv.duration     = obj.duration;
-        mv.chapter      = obj.chapter;
-        mv.url          = obj.url;
-        mv.frameTarget  = obj.frameTarget;
-        mv.cuePointName = obj.cuePointName;
-        mv.label        = obj.label;
-        return mv;
-    }
-
-    function collectFromProp(prop) {
-        var list = [];
-        for (var k = 1; k <= prop.numKeys; k++) {
-            list.push({ time: prop.keyTime(k), obj: markerValueToObj(prop.keyValue(k)) });
-        }
-        return list;
-    }
-
-    // マーカー群の最小時刻を返す
-    function firstTime(markers) {
-        if (markers.length === 0) return 0;
-        var t = markers[0].time;
-        for (var i = 1; i < markers.length; i++) {
-            if (markers[i].time < t) t = markers[i].time;
-        }
-        return t;
-    }
-
-    function pasteToMarkerProp(destProp, destCti, layerOffset) {
-        var srcMarkers  = clipboard.markers;
-        var usePosition = chkPosition.value;
-        var keepExist   = chkKeep.value;
-
-        // 「現在位置にペースト」：先頭マーカーをCTIに合わせてシフト
-        var shift = usePosition ? (destCti - firstTime(srcMarkers)) : 0;
-
-        var toWrite = [];
-        for (var i = 0; i < srcMarkers.length; i++) {
-            var t = srcMarkers[i].time + shift - layerOffset;
-            toWrite.push({ time: t, obj: srcMarkers[i].obj });
-        }
-
-        if (!keepExist) {
-            while (destProp.numKeys > 0) destProp.removeKey(1);
-        }
-
-        for (var i = 0; i < toWrite.length; i++) {
-            destProp.setValueAtTime(toWrite[i].time, buildMarkerValue(toWrite[i].obj));
-        }
-        return toWrite.length;
     }
 
     // ── UI ──────────────────────────────────────────────────────
@@ -163,7 +102,7 @@
             for (var i = 0; i < layers.length; i++) {
                 var lm  = layers[i].property("Marker");
                 var off = chkLayerOffset.value ? layers[i].startTime : 0;
-                var ml  = collectFromProp(lm);
+                var ml  = MarkerCopyCore.collectFromProp(lm);
                 for (var k = 0; k < ml.length; k++) ml[k].time += off;
                 markers = markers.concat(ml);
                 names.push(layers[i].name);
@@ -172,7 +111,7 @@
             clipboard.sourceName = names.join(", ");
         } else {
             // コンポマーカーをコピー
-            markers = collectFromProp(comp.markerProperty);
+            markers = MarkerCopyCore.collectFromProp(comp.markerProperty);
             clipboard.sourceType = "comp";
             clipboard.sourceName = comp.name;
         }
@@ -198,6 +137,7 @@
         var layers = comp.selectedLayers;
         var cti    = comp.time;
         var total  = 0;
+        var pasteOptions = { usePosition: chkPosition.value, keepExisting: chkKeep.value };
 
         app.beginUndoGroup("MarkerCopier Paste");
         try {
@@ -205,11 +145,11 @@
                 for (var i = 0; i < layers.length; i++) {
                     var lm  = layers[i].property("Marker");
                     var off = chkLayerOffset.value ? layers[i].startTime : 0;
-                    total  += pasteToMarkerProp(lm, cti, off);
+                    total  += MarkerCopyCore.pasteToMarkerProp(lm, cti, off, clipboard.markers, pasteOptions);
                 }
                 alert("✅ " + total + " 個のマーカーを " + layers.length + " レイヤーにペーストしました。");
             } else {
-                total = pasteToMarkerProp(comp.markerProperty, cti, 0);
+                total = MarkerCopyCore.pasteToMarkerProp(comp.markerProperty, cti, 0, clipboard.markers, pasteOptions);
                 alert("✅ " + total + " 個のマーカーをコンポジションにペーストしました。");
             }
         } catch (e) {

@@ -14,6 +14,7 @@ A collection of free After Effects scripts for motion design and live concert vi
 | Script | Description |
 |---|---|
 | [MarkerCopy](./MarkerCopy/) | Copy & paste markers between layers and compositions |
+| [SplitByDistance](./SplitByDistance/) | Group scattered layers by proximity and split each cluster into its own composition |
 
 ## Installation
 

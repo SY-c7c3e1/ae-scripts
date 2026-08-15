@@ -27,6 +27,24 @@ A collection of free After Effects scripts for motion design and live concert vi
 
 > To dock as a panel, place the file in the `Scripts\ScriptUI Panels\` folder and restart After Effects.
 
+## Launcher（ランチャーパネル）
+
+毎回 File > Scripts > Run Script File… でフォルダを辿るのが面倒な場合は、
+[`Launcher/AEScriptsLauncher.jsx`](./Launcher/) をパネルとして登録すると、
+カテゴリ別に並んだボタンでスクリプトをワンクリック実行できる。
+
+1. **このリポジトリ全体**を好きな場所（例：`Documents\ae-scripts\`）に置く
+2. `Launcher/AEScriptsLauncher.jsx` **だけ**を
+   `Support Files\Scripts\ScriptUI Panels\` にコピーし、AEを再起動
+   （リポジトリ本体は他の場所に置いたままでよい。移動不要）
+3. AEのメニュー **Window → AEScriptsLauncher.jsx** でパネルを開く（ドッキング可）
+4. 初回だけ「フォルダを選択…」で手順1のリポジトリのルートフォルダを指定
+5. 以降はボタンを押すだけで対応するスクリプトが直接実行される
+
+新しいスクリプトフォルダを追加したら「再スキャン」でボタンが増える。
+カテゴリ名やボタンのラベルは [`Launcher/categories.json`](./Launcher/categories.json)
+で調整できる（編集しなくてもフォルダ名がそのままカテゴリ名になる）。
+
 ## Testing
 
 ロジックはAEを起動せずにNode.jsでテストできる（詳細は [`testing/README.md`](./testing/README.md)）。

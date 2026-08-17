@@ -115,6 +115,16 @@ test("buildScriptList: 統合カテゴリの並び順は、統合元フォルダ
     assert.deepEqual(groups.map(g => g.category), ["MarkerCopy", "クロップ"]);
 });
 
+test("buildScriptList: .jsxbin（コンパイル済みスクリプト）も対象になる", () => {
+    const groups = LauncherCore.buildScriptList(items([
+        "SelectedCompsChanger/Selected_Comps_Changer.jsx",
+        "NisaiTools/Nisai_BPMSync.jsxbin"
+    ]), {});
+    const nisai = groups.find(g => g.category === "NisaiTools");
+    assert.equal(nisai.scripts.length, 1);
+    assert.equal(nisai.scripts[0].label, "Nisai_BPMSync"); // 拡張子を除いた名前がラベルになる
+});
+
 test("buildScriptList: 複数rootの同名スクリプトでもrootIndexで区別して保持する", () => {
     const mixed = [
         { relPath: "MyTools/Foo.jsx", rootIndex: 0 },

@@ -104,7 +104,7 @@
         coreLoadedFrom = coreFile.fsName;
     }
 
-    // ── 指定フォルダ配下の .jsx を再帰的に探す（判定・グルーピングはLauncher.core.jsに委譲） ──
+    // ── 指定フォルダ配下の .jsx / .jsxbin を再帰的に探す（判定・グルーピングはLauncher.core.jsに委譲） ──
     function collectJsxRelPaths(rootFolder) {
         var results = [];
 
@@ -116,7 +116,7 @@
                     if (entry.name.charAt(0) === ".") continue;
                     if (entry.name === "node_modules" || entry.name === "__tests__") continue;
                     walk(entry, prefix + entry.name + "/");
-                } else if (entry instanceof File && /\.jsx$/i.test(entry.name)) {
+                } else if (entry instanceof File && /\.(jsx|jsxbin)$/i.test(entry.name)) {
                     results.push(prefix + entry.name);
                 }
             }

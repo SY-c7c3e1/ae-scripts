@@ -26,13 +26,18 @@
 
     var DEFAULT_EXCLUDE_DIRS = ["testing", "Launcher", "node_modules", ".git"];
 
+    // 実行可能なスクリプトとして扱う拡張子。.jsxbin はコンパイル済み
+    // ExtendScript（ソース非公開で配布されることが多い）で、$.evalFile で
+    // .jsx と同様に実行できる。
+    var SCRIPT_EXT_RE = /\.(jsx|jsxbin)$/i;
+
     function contains(arr, value) {
         for (var i = 0; i < arr.length; i++) if (arr[i] === value) return true;
         return false;
     }
 
     // items: [{ relPath: "MarkerCopy/MarkerCopy.jsx", rootIndex: 0 }, ...]
-    //   relPath の区切りは "/" か "\\" どちらでもよい
+    //   relPath の区切りは "/" か "\\" どちらでもよい。拡張子は .jsx / .jsxbin
     // config（省略可）:
     //   excludeDirs: string[]                 — 走査結果から除外するトップフォルダ名（デフォルトに追加）
     //   categories:  { フォルダ名: 表示カテゴリ名 }        — 同じ表示名にした複数フォルダは1カテゴリに統合される
@@ -52,7 +57,7 @@
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
             var relPath = item.relPath.replace(/\\/g, "/");
-            if (!/\.jsx$/i.test(relPath)) continue;
+            if (!SCRIPT_EXT_RE.test(relPath)) continue;
             if (relPath.indexOf("__tests__/") !== -1) continue;
 
             var segments = relPath.split("/");
@@ -62,7 +67,7 @@
             if (topFolder.charAt(0) === ".") continue;
             if (contains(excludeDirs, topFolder)) continue;
 
-            var fileBase = segments[segments.length - 1].replace(/\.jsx$/i, "");
+            var fileBase = segments[segments.length - 1].replace(SCRIPT_EXT_RE, "");
             var label = labels[relPath] || fileBase;
             var categoryName = categories[topFolder] || topFolder;
             var orderIdx = order.indexOf ? order.indexOf(topFolder) : -1;

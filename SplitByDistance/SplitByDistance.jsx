@@ -36,6 +36,12 @@
 //     マスクは作成されない（余白をしきい値より大きくすると、隣のオブジェクトが写り込む
 //     場合があるので注意）
 //   ・ピクセル単位モードはサンプリング回数が多いと処理に時間がかかる（数十秒〜数分）
+//
+// ロジック本体は SplitByDistance.core.js に分離している（Node上でのテスト対象はそちら）。
+// このファイルは、AEオブジェクトへの実際のアクセス（プロパティ値の取得、レイヤーの
+// コピー・作成、UI）のみを担当する薄いアダプター。
+
+#include "SplitByDistance.core.js"
 
 (function () {
 
@@ -48,22 +54,12 @@
     var PIXEL_MAX_SAMPLES     = 20000;     // 1レイヤーあたりのサンプリング上限（超える場合は自動で間隔を広げる）
 
     // ============================================================
-    // ユーティリティ（共通）
+    // ユーティリティ（AEオブジェクトへの実アクセス）
     // ============================================================
 
     function getActiveComp() {
         var c = app.project.activeItem;
         return (c && c instanceof CompItem) ? c : null;
-    }
-
-    function arr3(v) {
-        return [v[0], v[1], (v.length > 2 ? v[2] : 0)];
-    }
-
-    function pad(n, width) {
-        var s = "" + n;
-        while (s.length < width) s = "0" + s;
-        return s;
     }
 
     function isTargetLayer(layer, includeHidden) {
@@ -78,11 +74,11 @@
     // ── レイヤーのトランスフォーム値取得（言語非依存のショートカットプロパティを使用） ──
 
     function getAnchorAtTime(layer, time) {
-        try { return arr3(layer.anchorPoint.valueAtTime(time, false)); } catch (e) { return [0, 0, 0]; }
+        try { return SplitByDistanceCore.arr3(layer.anchorPoint.valueAtTime(time, false)); } catch (e) { return [0, 0, 0]; }
     }
 
     function getScaleAtTime(layer, time) {
-        try { return arr3(layer.scale.valueAtTime(time, false)); } catch (e) { return [100, 100, 100]; }
+        try { return SplitByDistanceCore.arr3(layer.scale.valueAtTime(time, false)); } catch (e) { return [100, 100, 100]; }
     }
 
     function getRotationZAtTime(layer, time) {
@@ -94,7 +90,7 @@
 
     function getPositionAtTime(layer, time) {
         try {
-            return arr3(layer.position.valueAtTime(time, false));
+            return SplitByDistanceCore.arr3(layer.position.valueAtTime(time, false));
         } catch (e) {
             // Position が Separate Dimensions されている場合
             try {
@@ -121,69 +117,24 @@
         }
     }
 
-    // レイヤーのローカル座標点を、親チェーンをたどってコンプ座標へ変換（2D近似）
-    function layerLocalToComp(layer, localPt, time) {
+    // レイヤーとその親チェーンをたどり、SplitByDistanceCore.aabbFromLocalRect等に渡せる
+    // 素の配列（AEオブジェクトに依存しない）へ変換する
+    function buildTransformChain(layer, time) {
+        var chain = [];
         var cur = layer;
-        var p = [localPt[0], localPt[1]];
         var guard = 0;
-        var used3D = false;
-
         while (cur && guard < 50) {
             guard++;
-            if (cur.threeDLayer) used3D = true;
-
-            var anchor = getAnchorAtTime(cur, time);
-            var pos    = getPositionAtTime(cur, time);
-            var scale  = getScaleAtTime(cur, time);
-            var rot    = getRotationZAtTime(cur, time);
-
-            var x = p[0] - anchor[0];
-            var y = p[1] - anchor[1];
-
-            x *= (scale[0] / 100);
-            y *= (scale[1] / 100);
-
-            if (rot) {
-                var rad = rot * Math.PI / 180;
-                var cosR = Math.cos(rad), sinR = Math.sin(rad);
-                var rx = x * cosR - y * sinR;
-                var ry = x * sinR + y * cosR;
-                x = rx; y = ry;
-            }
-
-            x += pos[0];
-            y += pos[1];
-
-            p = [x, y];
+            chain.push({
+                anchor: getAnchorAtTime(cur, time),
+                position: getPositionAtTime(cur, time),
+                scale: getScaleAtTime(cur, time),
+                rotation: getRotationZAtTime(cur, time),
+                threeDLayer: !!cur.threeDLayer
+            });
             cur = cur.parent;
         }
-
-        return { point: p, used3D: used3D };
-    }
-
-    // レイヤーローカル空間の矩形 {left, top, right, bottom} を、コンプ座標系のAABBへ変換
-    function aabbFromLocalRect(layer, localRect, time) {
-        var corners = [
-            [localRect.left, localRect.top],
-            [localRect.right, localRect.top],
-            [localRect.left, localRect.bottom],
-            [localRect.right, localRect.bottom]
-        ];
-
-        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        var used3D = false;
-
-        for (var i = 0; i < corners.length; i++) {
-            var r = layerLocalToComp(layer, corners[i], time);
-            if (r.used3D) used3D = true;
-            var px = r.point[0], py = r.point[1];
-            if (px < minX) minX = px;
-            if (px > maxX) maxX = px;
-            if (py < minY) minY = py;
-            if (py > maxY) maxY = py;
-        }
-
-        return { left: minX, top: minY, right: maxX, bottom: maxY, used3D: used3D };
+        return chain;
     }
 
     // レイヤーのコンプ座標系でのバウンディングボックスを取得（sourceRectAtTime全体）
@@ -191,89 +142,25 @@
         var rect;
         try { rect = layer.sourceRectAtTime(time, false); } catch (e) { return null; }
         if (!rect) return null;
-        return aabbFromLocalRect(layer, {
+        var chain = buildTransformChain(layer, time);
+        return SplitByDistanceCore.aabbFromLocalRect(chain, {
             left: rect.left, top: rect.top,
             right: rect.left + rect.width, bottom: rect.top + rect.height
-        }, time);
-    }
-
-    // ── ボックス間距離（重なっている/接している場合は0） ──
-    function boxDistance(a, b) {
-        var dx = Math.max(a.left - b.right, b.left - a.right, 0);
-        var dy = Math.max(a.top - b.bottom, b.top - a.bottom, 0);
-        if (dx === 0 && dy === 0) return 0;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    // ── Union-Find ──
-    function ufFind(parent, i) {
-        while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; }
-        return i;
-    }
-    function ufUnion(parent, rank, a, b) {
-        var ra = ufFind(parent, a), rb = ufFind(parent, b);
-        if (ra === rb) return;
-        if (rank[ra] < rank[rb]) { parent[ra] = rb; }
-        else if (rank[ra] > rank[rb]) { parent[rb] = ra; }
-        else { parent[rb] = ra; rank[ra]++; }
-    }
-
-    // ── レイヤー位置のオフセット（Position のキーフレーム/値を一括シフト） ──
-    function shiftVectorProp(prop, offX, offY) {
-        if (prop.numKeys > 0) {
-            for (var k = 1; k <= prop.numKeys; k++) {
-                var v = prop.keyValue(k);
-                var nv = [v[0] - offX, v[1] - offY];
-                if (v.length > 2) nv.push(v[2]);
-                prop.setValueAtKey(k, nv);
-            }
-        } else {
-            var v2 = prop.value;
-            var nv2 = [v2[0] - offX, v2[1] - offY];
-            if (v2.length > 2) nv2.push(v2[2]);
-            prop.setValue(nv2);
-        }
-    }
-
-    function shiftScalarProp(prop, off) {
-        if (prop.numKeys > 0) {
-            for (var k = 1; k <= prop.numKeys; k++) prop.setValueAtKey(k, prop.keyValue(k) - off);
-        } else {
-            prop.setValue(prop.value - off);
-        }
+        });
     }
 
     function offsetLayerPosition(layer, offX, offY) {
         try {
-            shiftVectorProp(layer.position, offX, offY);
+            SplitByDistanceCore.shiftVectorProp(layer.position, offX, offY);
         } catch (e) {
-            try { shiftScalarProp(layer.xPosition, offX); } catch (e1) {}
-            try { shiftScalarProp(layer.yPosition, offY); } catch (e2) {}
+            try { SplitByDistanceCore.shiftScalarProp(layer.xPosition, offX); } catch (e1) {}
+            try { SplitByDistanceCore.shiftScalarProp(layer.yPosition, offY); } catch (e2) {}
         }
     }
 
     // ============================================================
     // ピクセル単位モード：画像の中身を解析して離れたオブジェクトを検出
     // ============================================================
-
-    // グリッド間隔を、サンプル数上限に収まるように自動調整
-    function computeGridStep(rectW, rectH, requestedStep, maxSamples) {
-        var step = Math.max(1, requestedStep);
-        var cols = Math.max(1, Math.ceil(rectW / step));
-        var rows = Math.max(1, Math.ceil(rectH / step));
-        if (cols * rows > maxSamples) {
-            var factor = Math.sqrt((cols * rows) / maxSamples);
-            step = Math.ceil(step * factor);
-        }
-        return step;
-    }
-
-    function colorDistance(sample, bg) {
-        var dr = Math.abs(sample[0] - bg[0]);
-        var dg = Math.abs(sample[1] - bg[1]);
-        var db = Math.abs(sample[2] - bg[2]);
-        return Math.max(dr, dg, db);
-    }
 
     // レイヤーの四隅付近をサンプリングし、背景の色とアルファを推定
     function sampleCornerInfo(layer, rect, time) {
@@ -304,7 +191,7 @@
         var rect = layer.sourceRectAtTime(time, false);
         if (!rect || rect.width <= 0 || rect.height <= 0) return [];
 
-        var step = computeGridStep(rect.width, rect.height, requestedStep, PIXEL_MAX_SAMPLES);
+        var step = SplitByDistanceCore.computeGridStep(rect.width, rect.height, requestedStep, PIXEL_MAX_SAMPLES);
         var cols = Math.max(1, Math.ceil(rect.width / step));
         var rows = Math.max(1, Math.ceil(rect.height / step));
 
@@ -324,6 +211,13 @@
             }
         }
 
+        var classifyOpts = {
+            useAlpha: useAlpha,
+            bgColor: bgColor,
+            alphaThreshold: PIXEL_ALPHA_THRESHOLD,
+            colorTolerance: PIXEL_COLOR_TOLERANCE
+        };
+
         var fg = [];
         var total = cols * rows;
         var count = 0;
@@ -336,70 +230,14 @@
                 try { samp = layer.sampleImage([cx, cy], [step, step], true, time); }
                 catch (eS) { samp = [0, 0, 0, 0]; }
 
-                var isFg;
-                if (samp[3] <= PIXEL_ALPHA_THRESHOLD) {
-                    isFg = false;
-                } else if (useAlpha) {
-                    isFg = true;
-                } else {
-                    isFg = colorDistance(samp, bgColor) > PIXEL_COLOR_TOLERANCE;
-                }
-                fg[j * cols + i] = isFg;
+                fg[j * cols + i] = SplitByDistanceCore.classifySample(samp, classifyOpts);
 
                 count++;
                 if (progressCb && (count % 200 === 0 || count === total)) progressCb(count, total);
             }
         }
 
-        // ── 連結成分（8近傍）を Union-Find で検出 ──
-        var n = cols * rows;
-        var parent = [], rank = [];
-        for (var k = 0; k < n; k++) { parent[k] = k; rank[k] = 0; }
-
-        function idx(x, y) { return y * cols + x; }
-
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                if (!fg[idx(x, y)]) continue;
-                var cand = [[x + 1, y], [x, y + 1], [x + 1, y + 1], [x - 1, y + 1]];
-                for (var ci = 0; ci < cand.length; ci++) {
-                    var nx = cand[ci][0], ny = cand[ci][1];
-                    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-                    if (fg[idx(nx, ny)]) ufUnion(parent, rank, idx(x, y), idx(nx, ny));
-                }
-            }
-        }
-
-        var groups = {};
-        for (var y2 = 0; y2 < rows; y2++) {
-            for (var x2 = 0; x2 < cols; x2++) {
-                if (!fg[idx(x2, y2)]) continue;
-                var root = ufFind(parent, idx(x2, y2));
-                if (!groups[root]) groups[root] = { minX: x2, minY: y2, maxX: x2, maxY: y2 };
-                else {
-                    var g = groups[root];
-                    if (x2 < g.minX) g.minX = x2;
-                    if (x2 > g.maxX) g.maxX = x2;
-                    if (y2 < g.minY) g.minY = y2;
-                    if (y2 > g.maxY) g.maxY = y2;
-                }
-            }
-        }
-
-        var maxRight  = rect.left + rect.width;
-        var maxBottom = rect.top + rect.height;
-        var blobs = [];
-        for (var gk in groups) {
-            if (!groups.hasOwnProperty(gk)) continue;
-            var gg = groups[gk];
-            blobs.push({
-                left:   rect.left + gg.minX * step,
-                top:    rect.top  + gg.minY * step,
-                right:  Math.min(maxRight,  rect.left + (gg.maxX + 1) * step),
-                bottom: Math.min(maxBottom, rect.top  + (gg.maxY + 1) * step)
-            });
-        }
-        return blobs;
+        return SplitByDistanceCore.blobsFromForegroundGrid(fg, cols, rows, rect, step);
     }
 
     // ============================================================
@@ -563,7 +401,7 @@
             for (var e = 0; e < pixelCandidates.length; e++) {
                 var r0 = pixelCandidates[e].sourceRectAtTime(time, false);
                 if (!r0 || r0.width <= 0 || r0.height <= 0) continue;
-                var st0 = computeGridStep(r0.width, r0.height, gridStepInput, PIXEL_MAX_SAMPLES);
+                var st0 = SplitByDistanceCore.computeGridStep(r0.width, r0.height, gridStepInput, PIXEL_MAX_SAMPLES);
                 estTotal += Math.ceil(r0.width / st0) * Math.ceil(r0.height / st0);
             }
 
@@ -590,7 +428,8 @@
                     continue;
                 }
                 for (var bb = 0; bb < blobs.length; bb++) {
-                    var aabb = aabbFromLocalRect(pLayer, blobs[bb], time);
+                    var chain = buildTransformChain(pLayer, time);
+                    var aabb = SplitByDistanceCore.aabbFromLocalRect(chain, blobs[bb]);
                     items.push({ layer: pLayer, index: pLayer.index, box: aabb, used3D: aabb.used3D });
                 }
             }
@@ -628,28 +467,9 @@
         }
 
         // ── クラスタリング（Union-Find） ──
-        var n = items.length;
-        var parent = [], rank = [];
-        for (var pi = 0; pi < n; pi++) { parent[pi] = pi; rank[pi] = 0; }
-
-        for (var a = 0; a < n; a++) {
-            for (var b = a + 1; b < n; b++) {
-                if (boxDistance(items[a].box, items[b].box) <= threshold) {
-                    ufUnion(parent, rank, a, b);
-                }
-            }
-        }
-
-        var groupsMap = {}; // root -> [itemIndex...]
-        for (var gi = 0; gi < n; gi++) {
-            var root = ufFind(parent, gi);
-            if (!groupsMap[root]) groupsMap[root] = [];
-            groupsMap[root].push(gi);
-        }
-        var clusters = [];
-        for (var key in groupsMap) {
-            if (groupsMap.hasOwnProperty(key)) clusters.push(groupsMap[key]);
-        }
+        var boxes = [];
+        for (var bi = 0; bi < items.length; bi++) boxes.push(items[bi].box);
+        var clusters = SplitByDistanceCore.clusterByDistance(boxes, threshold);
 
         // ── 確認 ──
         var modeLabel = chkDelete.value ? "移動（元レイヤーは削除されます）" : "複製（元レイヤーは残ります）";
@@ -664,7 +484,7 @@
         if (!proceed) return;
 
         var prefix = (txtPrefix.text && txtPrefix.text.replace(/^\s+|\s+$/g, "") !== "") ? txtPrefix.text.replace(/^\s+|\s+$/g, "") : comp.name;
-        var digits = Math.max(2, ("" + clusters.length).length);
+        var digits = SplitByDistanceCore.digitsForCount(clusters.length);
 
         var warnings = [];
         var toDelete = [];
@@ -680,43 +500,26 @@
             for (var idx = 0; idx < clusters.length; idx++) {
                 var clusterItemIdxs = clusters[idx];
 
-                // クラスタのバウンディングボックスを合算
-                var ub = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
-                for (var u = 0; u < clusterItemIdxs.length; u++) {
-                    var bx = items[clusterItemIdxs[u]].box;
-                    if (bx.left   < ub.left)   ub.left   = bx.left;
-                    if (bx.top    < ub.top)    ub.top    = bx.top;
-                    if (bx.right  > ub.right)  ub.right  = bx.right;
-                    if (bx.bottom > ub.bottom) ub.bottom = bx.bottom;
-                }
+                var ub = SplitByDistanceCore.unionBox(boxes, clusterItemIdxs);
+                var layout = SplitByDistanceCore.computeCompLayout(ub, margin, 30000);
 
-                var compW = Math.min(30000, Math.max(1, Math.ceil((ub.right - ub.left) + margin * 2)));
-                var compH = Math.min(30000, Math.max(1, Math.ceil((ub.bottom - ub.top) + margin * 2)));
-                var offsetX = ub.left - margin;
-                var offsetY = ub.top - margin;
-
-                var compName = prefix + "_" + pad(idx + 1, digits);
-                var newComp = app.project.items.addComp(compName, compW, compH, comp.pixelAspect, comp.duration, comp.frameRate);
+                var compName = SplitByDistanceCore.buildCompName(prefix, idx + 1, digits);
+                var newComp = app.project.items.addComp(compName, layout.width, layout.height, comp.pixelAspect, comp.duration, comp.frameRate);
                 newComp.bgColor = comp.bgColor;
                 if (targetFolder) newComp.parentFolder = targetFolder;
 
-                // クラスタ内で参照されているレイヤーを重複なく集める
+                // クラスタ内で参照されているレイヤーを重複なく、元のスタック順で集める
                 // （ピクセル単位モードでは、同じ画像から複数オブジェクトが同じクラスタに
                 // 含まれることがあるため、レイヤー自体は1回だけコピーする）
-                var layerMap = {}; // layer.index -> layer
+                var uniqueIndexes = SplitByDistanceCore.uniqueIndexesDescending(clusterItemIdxs, items);
+                var layerByIndex = {};
                 for (var u2 = 0; u2 < clusterItemIdxs.length; u2++) {
                     var itm = items[clusterItemIdxs[u2]];
-                    layerMap[itm.index] = itm.layer;
+                    layerByIndex[itm.index] = itm.layer;
                 }
-                var uniqueIndexes = [];
-                for (var kIdx in layerMap) {
-                    if (layerMap.hasOwnProperty(kIdx)) uniqueIndexes.push(parseInt(kIdx, 10));
-                }
-                // 元のスタック順を保つため、下（index大）から上（index小）の順にコピー
-                uniqueIndexes.sort(function (x, y) { return y - x; });
 
                 for (var si = 0; si < uniqueIndexes.length; si++) {
-                    var srcLayer = layerMap[uniqueIndexes[si]];
+                    var srcLayer = layerByIndex[uniqueIndexes[si]];
 
                     if (srcLayer.threeDLayer) {
                         warnings.push(srcLayer.name + "：3Dレイヤーのため簡易的な2D近似で計算しています。位置を確認してください。");
@@ -733,7 +536,7 @@
                     } else if (isPositionExpressionEnabled(newLayer)) {
                         warnings.push(srcLayer.name + "：Position にエクスプレッションが設定されているため自動位置調整をスキップしました。");
                     } else {
-                        offsetLayerPosition(newLayer, offsetX, offsetY);
+                        offsetLayerPosition(newLayer, layout.offsetX, layout.offsetY);
                     }
 
                     if (chkDelete.value) toDelete.push(srcLayer);

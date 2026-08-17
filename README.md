@@ -26,6 +26,15 @@ A collection of free After Effects scripts for motion design and live concert vi
 | [InsertRenderToSameNameComp](./InsertRenderToSameNameComp/) | Insert rendered footage into same-named comps (ignoring extension) and solo the inserted layer |
 | [BPMMaker](./BPMMaker/) | Place beat markers or null keyframes at a given BPM |
 | [FileViewer](./FileViewer/) | View text extracted from Word/PDF/Excel files inside After Effects |
+<<<<<<< HEAD
+=======
+
+## Expressions（エクスプレッション置き場）
+
+完成した「スクリプト」ではなく、レイヤーのプロパティに直接貼り付けて使う
+**エクスプレッションのコード片**を集める場所。
+[`Expressions/`](./Expressions/) を参照。
+>>>>>>> 59d087589b3293d982106bcc0dc15dc838800773
 
 ## Installation
 

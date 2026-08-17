@@ -15,6 +15,13 @@ A collection of free After Effects scripts for motion design and live concert vi
 |---|---|
 | [MarkerCopy](./MarkerCopy/) | Copy & paste markers between layers and compositions |
 | [SplitByDistance](./SplitByDistance/) | Group scattered layers by proximity and split each cluster into its own composition |
+| [ExpressionToMatchName](./ExpressionToMatchName/) | Convert expressions that reference effects by display name into language-independent matchName references |
+
+## Expressions（エクスプレッション置き場）
+
+完成した「スクリプト」ではなく、レイヤーのプロパティに直接貼り付けて使う
+**エクスプレッションのコード片**を集める場所。
+[`Expressions/`](./Expressions/) を参照。
 
 ## Installation
 

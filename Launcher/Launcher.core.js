@@ -1,13 +1,20 @@
 // Launcher.core.js
 // AEScriptsLauncher.jsx のロジック本体（UI・実ファイルシステム非依存）。
 //
-// AEScriptsLauncher.jsx 側は「リポジトリ内の .jsx を再帰的に探す」という
-// 実ファイルシステムへのアクセスだけを担当し、見つけた相対パスの配列を
-// ここに渡す。ここでは、それをカテゴリごとにグルーピング・並び替え・
-// 除外フォルダのフィルタリングだけを行う（純粋なロジックなのでNodeでテスト可能）。
+// AEScriptsLauncher.jsx 側は「設定済みの各フォルダ（root）内の .jsx を
+// 再帰的に探す」という実ファイルシステムへのアクセスだけを担当し、見つけた
+// 相対パス＋どのrootから見つかったか（rootIndex）を配列にしてここに渡す。
+// ここでは、それをカテゴリごとにグルーピング・並び替え・除外フォルダの
+// フィルタリングだけを行う（純粋なロジックなのでNodeでテスト可能）。
 //
-// ExtendScript側からは #include で読み込み、テスト側からは Node の
-// require() で読み込む。
+// 複数root対応：他の人が作ったスクリプト等、git管理下のリポジトリとは
+// 別の非公開フォルダも追加でスキャン対象にできるようにするため、
+// 1つのフラットな相対パス配列ではなく { relPath, rootIndex } の配列を扱う。
+// カテゴリ名・ラベルの上書き設定（categories.json）はフォルダ名をキーにする
+// ため、rootをまたいでも同じフォルダ名なら同じ設定が適用される。
+//
+// ExtendScript側からは実行時に $.evalFile で読み込み、テスト側からは
+// Node の require() で読み込む（詳細は testing/README.md）。
 
 (function (global) {
 
@@ -18,15 +25,16 @@
         return false;
     }
 
-    // relPaths: ["MarkerCopy/MarkerCopy.jsx", ...]（区切りは "/" か "\\" どちらでもよい）
+    // items: [{ relPath: "MarkerCopy/MarkerCopy.jsx", rootIndex: 0 }, ...]
+    //   relPath の区切りは "/" か "\\" どちらでもよい
     // config（省略可）:
     //   excludeDirs: string[]                 — 走査結果から除外するトップフォルダ名（デフォルトに追加）
     //   categories:  { フォルダ名: 表示カテゴリ名 }
     //   order:       string[]                 — フォルダ名でのカテゴリ表示順。未記載のものはアルファベット順で末尾に
     //   labels:      { "フォルダ名/ファイル名.jsx": 表示ラベル }
     //
-    // 戻り値: [{ category: string, scripts: [{ label: string, relPath: string }] }]
-    function buildScriptList(relPaths, config) {
+    // 戻り値: [{ category: string, scripts: [{ label: string, relPath: string, rootIndex: number }] }]
+    function buildScriptList(items, config) {
         config = config || {};
         var excludeDirs = DEFAULT_EXCLUDE_DIRS.concat(config.excludeDirs || []);
         var categories = config.categories || {};
@@ -35,8 +43,9 @@
 
         var groups = {}; // topFolder -> { category, scripts: [] }
 
-        for (var i = 0; i < relPaths.length; i++) {
-            var relPath = relPaths[i].replace(/\\/g, "/");
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var relPath = item.relPath.replace(/\\/g, "/");
             if (!/\.jsx$/i.test(relPath)) continue;
             if (relPath.indexOf("__tests__/") !== -1) continue;
 
@@ -54,7 +63,7 @@
             if (!groups[topFolder]) {
                 groups[topFolder] = { category: categoryName, scripts: [] };
             }
-            groups[topFolder].scripts.push({ label: label, relPath: relPath });
+            groups[topFolder].scripts.push({ label: label, relPath: relPath, rootIndex: item.rootIndex });
         }
 
         var keys = [];

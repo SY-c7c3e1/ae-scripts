@@ -45,7 +45,33 @@ function createMockMarkerProperty(initial) {
     };
 }
 
+// ── 汎用の値プロパティ（Position等）のモック ──────────────────
+// AEの Property オブジェクト（numKeys / keyValue() / setValueAtKey() / value / setValue()）を
+// 模した最小限のモック。キーフレーム配列 [{time, value}] を渡せばキーフレームあり、
+// 単一の値（配列や数値）を渡せば静的値のみのプロパティになる。
+function createMockValueProperty(staticValueOrKeys) {
+    var isKeyed = Array.isArray(staticValueOrKeys) && staticValueOrKeys.length > 0 &&
+        staticValueOrKeys[0] !== null && typeof staticValueOrKeys[0] === "object" &&
+        Object.prototype.hasOwnProperty.call(staticValueOrKeys[0], "time");
+
+    var keys = isKeyed ? staticValueOrKeys.map(function (k) { return { time: k.time, value: k.value }; }) : [];
+    var staticValue = isKeyed ? null : staticValueOrKeys;
+
+    return {
+        get numKeys() { return keys.length; },
+        keyValue: function (k) { return keys[k - 1].value; },
+        setValueAtKey: function (k, v) { keys[k - 1].value = v; },
+        get value() { return staticValue; },
+        setValue: function (v) { staticValue = v; },
+        // テスト用ヘルパー（AE本物のAPIには存在しない）
+        _dump: function () {
+            return isKeyed ? keys.map(function (k) { return k.value; }) : staticValue;
+        }
+    };
+}
+
 module.exports = {
     MockMarkerValue: MockMarkerValue,
-    createMockMarkerProperty: createMockMarkerProperty
+    createMockMarkerProperty: createMockMarkerProperty,
+    createMockValueProperty: createMockValueProperty
 };

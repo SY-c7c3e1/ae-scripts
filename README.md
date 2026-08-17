@@ -14,6 +14,7 @@ A collection of free After Effects scripts for motion design and live concert vi
 | Script | Description |
 |---|---|
 | [Renamer](./Renamer/) | Batch rename selected layers or Project panel items: strip/prepend/append text and find & replace |
+| [CompSettingsChanger](./CompSettingsChanger/) | Batch-edit selected comps' width/height (with aspect-ratio lock), framerate (with Drop/Non-Drop Frame presets), and duration |
 | [MarkerCopy](./MarkerCopy/) | Copy & paste markers between layers and compositions |
 | [SplitByDistance](./SplitByDistance/) | Group scattered layers by proximity and split each cluster into its own composition |
 | [ExpressionToMatchName](./ExpressionToMatchName/) | Convert expressions that reference effects/parameters by display name into language-independent matchName references (plus a revert tool) |

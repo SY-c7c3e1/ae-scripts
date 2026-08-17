@@ -20,7 +20,12 @@ A collection of free After Effects scripts for motion design and live concert vi
 | [AutoCropComposition](./AutoCropComposition/) | Detect the used area of a composition and crop it, shifting layers to match |
 | [CropLayersToCompSize](./CropLayersToCompSize/) | Wrap each layer into its own precomp sized to the composition |
 | [LoopComp](./LoopComp/) | Create a new composition that loops a portion of the original via Time Remap |
+| [LoopPrecomp](./LoopPrecomp/) | Precompose a comp for looping by splitting it at a given frame count |
 | [GridChartMaker](./GridChartMaker/) | Generate a grid color chart sized to the active composition |
+| [CueCutter](./CueCutter/) | Split precomposed layers into per-marker compositions using a "♪" layer's commented markers |
+| [InsertRenderToSameNameComp](./InsertRenderToSameNameComp/) | Insert rendered footage into same-named comps (ignoring extension) and solo the inserted layer |
+| [BPMMaker](./BPMMaker/) | Place beat markers or null keyframes at a given BPM |
+| [FileViewer](./FileViewer/) | View text extracted from Word/PDF/Excel files inside After Effects |
 
 ## Installation
 

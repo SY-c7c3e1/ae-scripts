@@ -22,13 +22,30 @@
 //
 // 一覧のグルーピングロジック本体は Launcher.core.js（Node上でテスト済み）。
 // このファイルはAEの実ファイルシステムへのアクセスとUI表示のみを担当する。
-
-#include "Launcher.core.js"
+//
+// 注意：このファイルはリポジトリ本体とは別の場所（ScriptUI Panelsフォルダ）に
+// 単体で置かれる想定のため、#include ではなく、選択済みのリポジトリフォルダから
+// 実行時に $.evalFile で Launcher.core.js を読み込む（ensureCoreLoaded関数）。
 
 (function (thisObj) {
 
     var SETTINGS_SECTION = "AEScriptsLauncher";
     var SETTINGS_KEY_ROOT = "rootPath";
+    var coreLoadedFrom = null; // 現在ロード済みのLauncher.core.jsのfsName（再ロード判定用）
+
+    // rootFolder配下の Launcher/Launcher.core.js を読み込み、グローバルの
+    // LauncherCore を生やす。フォルダ変更時など、別のLauncher.core.jsに
+    // 差し替わった場合は読み込み直す。
+    function ensureCoreLoaded(rootFolder) {
+        var coreFile = new File(rootFolder.fsName + "/Launcher/Launcher.core.js");
+        if (!coreFile.exists) {
+            throw new Error("Launcher.core.js が見つかりません：\n" + coreFile.fsName +
+                "\n\nフォルダ選択で ae-scripts リポジトリのルート（package.json がある場所）を指定してください。");
+        }
+        if (coreLoadedFrom === coreFile.fsName && typeof LauncherCore !== "undefined") return;
+        $.evalFile(coreFile);
+        coreLoadedFrom = coreFile.fsName;
+    }
 
     // ── 設定の読み書き（AE標準のpersistent settings。ae-scripts自体には保存しない） ──
     function getSavedRootPath() {
@@ -118,6 +135,14 @@
             }
 
             lblRoot.text = rootFolder.fsName;
+
+            try {
+                ensureCoreLoaded(rootFolder);
+            } catch (e) {
+                listGroup.add("statictext", undefined, e.message || e.toString(), { multiline: true });
+                if (pal.layout) pal.layout.layout(true);
+                return;
+            }
 
             var relPaths = collectJsxRelPaths(rootFolder);
             var config = loadCategoriesConfig(rootFolder);

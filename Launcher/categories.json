@@ -1,12 +1,30 @@
 {
-  "order": ["MarkerCopy", "SplitByDistance", "ExpressionToMatchName"],
+  "order": [
+    "MarkerCopy",
+    "SplitByDistance",
+    "RandomizeLayerStart",
+    "AutoCropComposition",
+    "CropLayersToCompSize",
+    "LoopComp",
+    "GridChartMaker",
+    "ExpressionToMatchName"
+  ],
   "categories": {
     "MarkerCopy": "マーカー",
     "SplitByDistance": "レイヤー分割",
+    "RandomizeLayerStart": "レイヤー操作",
+    "AutoCropComposition": "クロップ",
+    "CropLayersToCompSize": "クロップ",
+    "LoopComp": "ループ",
+    "GridChartMaker": "カラーチャート",
     "ExpressionToMatchName": "エクスプレッション"
   },
   "labels": {
     "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expression → MatchName 変換",
-    "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "元のExpressionに戻す"
+    "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "元のExpressionに戻す",
+    "AutoCropComposition/AutoCropComposition.jsx": "コンポを自動クロップ",
+    "CropLayersToCompSize/CropLayersToCompSize.jsx": "レイヤーを個別プリコンプ化",
+    "LoopComp/LoopComp.jsx": "ループ複製コンポを作成",
+    "RandomizeLayerStart/RandomizeLayerStart.jsx": "開始位置をランダム化"
   }
 }

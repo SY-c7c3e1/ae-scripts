@@ -31,8 +31,8 @@ A collection of free After Effects scripts for motion design and live concert vi
 ## Expressions（エクスプレッション置き場）
 
 完成した「スクリプト」ではなく、レイヤーのプロパティに直接貼り付けて使う
-**エクスプレッションのコード片**を集める場所。
-[`Expressions/`](./Expressions/) を参照。
+**エクスプレッションのコード片**は、別リポジトリ
+[ae-expressions](https://github.com/SY-c7c3e1/ae-expressions) にまとめてある。
 
 ## Installation
 

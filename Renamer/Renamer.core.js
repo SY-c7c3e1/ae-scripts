@@ -1,8 +1,12 @@
-// LayerRenamer.core.js
-// LayerRenamer のロジック本体（UI非依存）。
+// Renamer.core.js
+// Renamer のロジック本体（UI非依存）。
 //
-// ExtendScript側（LayerRenamer.jsx）からは #include で読み込み、
-// テスト側（__tests__/LayerRenamer.core.test.js）からは Node の require() で読み込む。
+// レイヤー名・Projectパネルのアイテム名のどちらにも使える汎用の
+// 文字列変換ロジック（対象がどちらであっても "name" という文字列プロパティを
+// 書き換えるだけなので、ロジックは共通化できる）。
+//
+// ExtendScript側（Renamer.jsx）からは #include で読み込み、
+// テスト側（__tests__/Renamer.core.test.js）からは Node の require() で読み込む。
 // そのため UI の状態（ScriptUIのテキスト欄等）には一切依存せず、
 // 必要な値はすべて引数で受け取る。
 //
@@ -18,13 +22,13 @@
         return text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     }
 
-    // name: 元のレイヤー名（文字列）
+    // name: 元の名前（レイヤー名 or Projectアイテム名）
     // options: {
     //   beforeReplaceText, afterReplaceText,  // 置換前後の文字列
     //   firstText, endText,                    // 先頭・末尾に追加する文字列
     //   firstDelNum, endDelNum                  // 先頭・末尾から削除する文字数
     // }
-    function renameLayerName(name, options) {
+    function computeNewName(name, options) {
         options = options || {};
 
         var beforeReplaceText = options.beforeReplaceText || "";
@@ -66,14 +70,14 @@
     }
 
     var ns = {
-        escapeRegExp:    escapeRegExp,
-        renameLayerName: renameLayerName
+        escapeRegExp:  escapeRegExp,
+        computeNewName: computeNewName
     };
 
     if (typeof module !== "undefined" && module.exports) {
-        module.exports = ns;          // Node（テストから require）
+        module.exports = ns;      // Node（テストから require）
     } else {
-        global.LayerRenamerCore = ns; // ExtendScript（#include後、グローバルに生える）
+        global.RenamerCore = ns;  // ExtendScript（#include後、グローバルに生える）
     }
 
 })(this);

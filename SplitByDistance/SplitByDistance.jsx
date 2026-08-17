@@ -275,79 +275,90 @@
     chkSelectedOnly.value = false;
     chkIncludeHidden.value = false;
 
-    // ── ピクセル検出設定（ピクセル単位モードの時のみ使用） ──
-    var secPixel = dlg.add("panel", undefined, "  ピクセル検出設定");
+    // ── 背景の判定方法（ピクセル単位モードの時のみ使用） ──
+    var secPixel = dlg.add("panel", undefined, "  背景の判定方法（ピクセル単位モードのみ）");
     secPixel.orientation = "column";
     secPixel.alignChildren = ["fill", "top"];
     secPixel.margins = [10, 14, 10, 10];
     secPixel.spacing = 5;
 
-    var lblBg = secPixel.add("statictext", undefined, "背景の判定方法：");
-    var rdBgAuto  = secPixel.add("radiobutton", undefined, "自動（アルファ優先／なければ背景色を推定）");
+    var rdBgAuto  = secPixel.add("radiobutton", undefined, "自動（おすすめ）");
     var rdBgAlpha = secPixel.add("radiobutton", undefined, "アルファチャンネル（透明部分）");
     var rdBgWhite = secPixel.add("radiobutton", undefined, "白背景");
     var rdBgBlack = secPixel.add("radiobutton", undefined, "黒背景");
     rdBgAuto.value = true;
 
-    var rowGrid = secPixel.add("group");
+    var lblProgress = secPixel.add("statictext", undefined, "");
+    lblProgress.characters = 40;
+
+    // ── 分割の基準（メイン設定） ──
+    var secSplit = dlg.add("panel", undefined, "  分割の基準");
+    secSplit.orientation = "column";
+    secSplit.alignChildren = ["fill", "top"];
+    secSplit.margins = [10, 14, 10, 10];
+    secSplit.spacing = 3;
+
+    var rowThresh = secSplit.add("group");
+    rowThresh.alignment = "fill";
+    rowThresh.add("statictext", undefined, "オブジェクト同士のすき間 (px)：");
+    var txtThreshold = rowThresh.add("edittext", undefined, "80");
+    txtThreshold.characters = 6;
+    secSplit.add("statictext", undefined, "この距離より離れていたら、別々のコンポに分けます。", { multiline: true });
+
+    var rowMargin = secSplit.add("group");
+    rowMargin.alignment = "fill";
+    rowMargin.add("statictext", undefined, "コンポの余白 (px)：");
+    var txtMargin = rowMargin.add("edittext", undefined, "40");
+    txtMargin.characters = 6;
+    secSplit.add("statictext", undefined, "各コンポの周りに残す余白です。", { multiline: true });
+
+    // ── 詳細設定（折りたたみ） ──
+    var chkAdvanced = dlg.add("checkbox", undefined, "詳細設定を表示");
+    chkAdvanced.value = false;
+
+    var secAdvanced = dlg.add("panel", undefined, "  詳細設定");
+    secAdvanced.orientation = "column";
+    secAdvanced.alignChildren = ["fill", "top"];
+    secAdvanced.margins = [10, 14, 10, 10];
+    secAdvanced.spacing = 6;
+
+    var rowGrid = secAdvanced.add("group");
     rowGrid.alignment = "fill";
     rowGrid.add("statictext", undefined, "解析グリッド間隔 (px)：");
     var txtGridStep = rowGrid.add("edittext", undefined, "8");
     txtGridStep.characters = 6;
-    txtGridStep.helpTip = "小さいほど精密ですが処理が遅くなります";
+    txtGridStep.helpTip = "ピクセル単位モードのみで使用。小さいほど精密ですが処理が遅くなります";
 
-    var lblProgress = secPixel.add("statictext", undefined, "");
-    lblProgress.characters = 40;
-
-    function updatePixelPanelEnabled() {
-        var on = rdModePixel.value;
-        secPixel.enabled = on;
-        chkSelectedOnly.value = on ? true : chkSelectedOnly.value;
-        chkSelectedOnly.enabled = !on;
-    }
-    rdModeLayer.onClick = updatePixelPanelEnabled;
-    rdModePixel.onClick = updatePixelPanelEnabled;
-    updatePixelPanelEnabled();
-
-    // ── 分割設定 ──
-    var secSplit = dlg.add("panel", undefined, "  分割設定");
-    secSplit.orientation = "column";
-    secSplit.alignChildren = ["fill", "top"];
-    secSplit.margins = [10, 14, 10, 10];
-    secSplit.spacing = 6;
-
-    var rowThresh = secSplit.add("group");
-    rowThresh.alignment = "fill";
-    rowThresh.add("statictext", undefined, "しきい値 (px)：");
-    var txtThreshold = rowThresh.add("edittext", undefined, "80");
-    txtThreshold.characters = 6;
-
-    var rowMargin = secSplit.add("group");
-    rowMargin.alignment = "fill";
-    rowMargin.add("statictext", undefined, "余白 (px)：");
-    var txtMargin = rowMargin.add("edittext", undefined, "40");
-    txtMargin.characters = 6;
-
-    var rowPrefix = secSplit.add("group");
+    var rowPrefix = secAdvanced.add("group");
     rowPrefix.alignment = "fill";
     rowPrefix.add("statictext", undefined, "コンプ名の接頭辞：");
     var txtPrefix = rowPrefix.add("edittext", undefined, "");
     txtPrefix.characters = 16;
     txtPrefix.helpTip = "空欄の場合はアクティブコンプ名を使用します";
 
-    var chkFolder = secSplit.add("checkbox", undefined, "生成したコンポをフォルダにまとめる");
+    var chkFolder = secAdvanced.add("checkbox", undefined, "生成したコンポをフォルダにまとめる");
     chkFolder.value = true;
 
-    // ── オプション ──
-    var secOpt = dlg.add("panel", undefined, "  オプション");
-    secOpt.orientation = "column";
-    secOpt.alignChildren = ["fill", "top"];
-    secOpt.margins = [10, 14, 10, 10];
-    secOpt.spacing = 5;
-
-    var chkDelete = secOpt.add("checkbox", undefined, "元レイヤーを削除する（移動モード）");
+    var chkDelete = secAdvanced.add("checkbox", undefined, "元レイヤーを削除する（移動モード）");
     chkDelete.value = false;
     chkDelete.helpTip = "OFF: 元コンポのレイヤーはそのまま残ります（複製）\nON: 新規コンポへコピー後、元レイヤーを削除します（移動）";
+
+    secAdvanced.visible = false;
+    chkAdvanced.onClick = function () {
+        secAdvanced.visible = chkAdvanced.value;
+        dlg.layout.layout(true);
+    };
+
+    function updatePixelPanelEnabled() {
+        var on = rdModePixel.value;
+        secPixel.enabled = on;
+        rowGrid.enabled = on;
+        chkSelectedOnly.value = on ? true : chkSelectedOnly.value;
+        chkSelectedOnly.enabled = !on;
+    }
+    rdModeLayer.onClick = updatePixelPanelEnabled;
+    rdModePixel.onClick = updatePixelPanelEnabled;
+    updatePixelPanelEnabled();
 
     // ── 実行 / 閉じる ──
     var runGroup = dlg.add("group");
@@ -395,6 +406,33 @@
             if (rdBgAlpha.value) bgMode = "alpha";
             else if (rdBgWhite.value) bgMode = "white";
             else if (rdBgBlack.value) bgMode = "black";
+
+            // sampleImage が実際に使えるか、本処理の前に1点だけ試す
+            // （失敗しても内部で握りつぶさず、原因を表示して中断する）
+            var diag = null;
+            try {
+                var testLayer = pixelCandidates[0];
+                var testRect = testLayer.sourceRectAtTime(time, false);
+                if (!testRect || testRect.width <= 0 || testRect.height <= 0) {
+                    diag = "レイヤーのサイズが取得できませんでした（sourceRectAtTimeの結果が空）。";
+                } else {
+                    var testPt = [testRect.left + testRect.width / 2, testRect.top + testRect.height / 2];
+                    var testSamp = testLayer.sampleImage(testPt, [4, 4], true, time);
+                    if (!testSamp || testSamp.length < 4) {
+                        diag = "sampleImageの戻り値が不正です: " + (testSamp ? testSamp.toString() : "null/undefined");
+                    }
+                }
+            } catch (eTest) {
+                diag = "sampleImageの呼び出しでエラーが発生しました：\n" + eTest.toString();
+            }
+            if (diag) {
+                alert(
+                    "ピクセル単位モードを実行できませんでした。\n\n" + diag +
+                    "\n\nこのAEのバージョンでは layer.sampleImage が想定通りに動作していない可能性があります。" +
+                    "上記のエラー内容を開発者にお伝えください。"
+                );
+                return;
+            }
 
             // 事前見積もり（サンプル数）
             var estTotal = 0;

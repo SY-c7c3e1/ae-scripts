@@ -1,35 +1,5 @@
 {
   "order": [
-<<<<<<< HEAD
-    "MarkerCopy",
-    "SplitByDistance",
-    "CueCutter",
-    "RandomizeLayerStart",
-    "AutoCropComposition",
-    "CropLayersToCompSize",
-    "LoopComp",
-    "LoopPrecomp",
-    "GridChartMaker",
-    "BPMMaker",
-    "InsertRenderToSameNameComp",
-    "FileViewer",
-    "ExpressionToMatchName"
-  ],
-  "categories": {
-    "MarkerCopy": "マーカー",
-    "SplitByDistance": "レイヤー分割",
-    "CueCutter": "レイヤー分割",
-    "RandomizeLayerStart": "レイヤー操作",
-    "AutoCropComposition": "クロップ",
-    "CropLayersToCompSize": "クロップ",
-    "LoopComp": "ループ",
-    "LoopPrecomp": "ループ",
-    "GridChartMaker": "カラーチャート",
-    "BPMMaker": "BPMツール",
-    "InsertRenderToSameNameComp": "フッテージ差し替え",
-    "FileViewer": "ユーティリティ",
-    "ExpressionToMatchName": "エクスプレッション"
-=======
     "SplitByDistance",
     "CropLayersToCompSize",
     "CueCutter",
@@ -58,7 +28,6 @@
     "ExpressionToMatchName": "05Expression",
     "InsertRenderToSameNameComp": "06Export_data",
     "FileViewer": "08Viewer"
->>>>>>> 59d087589b3293d982106bcc0dc15dc838800773
   },
   "labels": {
     "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expression → MatchName 変換",

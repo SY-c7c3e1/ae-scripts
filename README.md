@@ -15,7 +15,12 @@ A collection of free After Effects scripts for motion design and live concert vi
 |---|---|
 | [MarkerCopy](./MarkerCopy/) | Copy & paste markers between layers and compositions |
 | [SplitByDistance](./SplitByDistance/) | Group scattered layers by proximity and split each cluster into its own composition |
-| [ExpressionToMatchName](./ExpressionToMatchName/) | Convert expressions that reference effects by display name into language-independent matchName references |
+| [ExpressionToMatchName](./ExpressionToMatchName/) | Convert expressions that reference effects/parameters by display name into language-independent matchName references (plus a revert tool) |
+| [RandomizeLayerStart](./RandomizeLayerStart/) | Randomize the start time of selected layers within the comp |
+| [AutoCropComposition](./AutoCropComposition/) | Detect the used area of a composition and crop it, shifting layers to match |
+| [CropLayersToCompSize](./CropLayersToCompSize/) | Wrap each layer into its own precomp sized to the composition |
+| [LoopComp](./LoopComp/) | Create a new composition that loops a portion of the original via Time Remap |
+| [GridChartMaker](./GridChartMaker/) | Generate a grid color chart sized to the active composition |
 
 ## Expressions（エクスプレッション置き場）
 

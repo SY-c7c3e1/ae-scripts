@@ -82,6 +82,39 @@ test("buildScriptList: バックスラッシュ区切りのパスも扱える（
     assert.equal(groups[0].scripts[0].relPath, "MarkerCopy/MarkerCopy.jsx");
 });
 
+test("buildScriptList: categories で複数フォルダを同じカテゴリ名にすると1つに統合される", () => {
+    const merged = items([
+        "AutoCropComposition/AutoCropComposition.jsx",
+        "CropLayersToCompSize/CropLayersToCompSize.jsx",
+        "LoopComp/LoopComp.jsx"
+    ]);
+    const groups = LauncherCore.buildScriptList(merged, {
+        categories: { AutoCropComposition: "クロップ", CropLayersToCompSize: "クロップ" }
+    });
+
+    const cropGroups = groups.filter(g => g.category === "クロップ");
+    assert.equal(cropGroups.length, 1); // 同名カテゴリが重複して並ばない
+    assert.equal(cropGroups[0].scripts.length, 2);
+
+    const loopGroup = groups.find(g => g.category === "LoopComp");
+    assert.equal(loopGroup.scripts.length, 1);
+});
+
+test("buildScriptList: 統合カテゴリの並び順は、統合元フォルダの中で最も早いorder位置になる", () => {
+    const merged = items([
+        "AutoCropComposition/AutoCropComposition.jsx",
+        "CropLayersToCompSize/CropLayersToCompSize.jsx",
+        "MarkerCopy/MarkerCopy.jsx"
+    ]);
+    const groups = LauncherCore.buildScriptList(merged, {
+        categories: { AutoCropComposition: "クロップ", CropLayersToCompSize: "クロップ" },
+        order: ["MarkerCopy", "CropLayersToCompSize", "AutoCropComposition"]
+    });
+    // クロップグループ内で最も早いorder位置は CropLayersToCompSize（index 1）なので、
+    // MarkerCopy（index 0）の次に来る
+    assert.deepEqual(groups.map(g => g.category), ["MarkerCopy", "クロップ"]);
+});
+
 test("buildScriptList: 複数rootの同名スクリプトでもrootIndexで区別して保持する", () => {
     const mixed = [
         { relPath: "MyTools/Foo.jsx", rootIndex: 0 },

@@ -2,21 +2,31 @@
   "order": [
     "MarkerCopy",
     "SplitByDistance",
+    "CueCutter",
     "RandomizeLayerStart",
     "AutoCropComposition",
     "CropLayersToCompSize",
     "LoopComp",
+    "LoopPrecomp",
     "GridChartMaker",
+    "BPMMaker",
+    "InsertRenderToSameNameComp",
+    "FileViewer",
     "ExpressionToMatchName"
   ],
   "categories": {
     "MarkerCopy": "マーカー",
     "SplitByDistance": "レイヤー分割",
+    "CueCutter": "レイヤー分割",
     "RandomizeLayerStart": "レイヤー操作",
     "AutoCropComposition": "クロップ",
     "CropLayersToCompSize": "クロップ",
     "LoopComp": "ループ",
+    "LoopPrecomp": "ループ",
     "GridChartMaker": "カラーチャート",
+    "BPMMaker": "BPMツール",
+    "InsertRenderToSameNameComp": "フッテージ差し替え",
+    "FileViewer": "ユーティリティ",
     "ExpressionToMatchName": "エクスプレッション"
   },
   "labels": {
@@ -24,7 +34,12 @@
     "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "元のExpressionに戻す",
     "AutoCropComposition/AutoCropComposition.jsx": "コンポを自動クロップ",
     "CropLayersToCompSize/CropLayersToCompSize.jsx": "レイヤーを個別プリコンプ化",
-    "LoopComp/LoopComp.jsx": "ループ複製コンポを作成",
-    "RandomizeLayerStart/RandomizeLayerStart.jsx": "開始位置をランダム化"
+    "LoopComp/LoopComp.jsx": "ループ複製コンポを作成（複製方式）",
+    "LoopPrecomp/LoopPrecomp.jsx": "ループ用プリコンプ作成（分割方式）",
+    "RandomizeLayerStart/RandomizeLayerStart.jsx": "開始位置をランダム化",
+    "CueCutter/CueCutter.jsx": "♪マーカーでコンポ分割（Cue Cutter）",
+    "InsertRenderToSameNameComp/InsertRenderToSameNameComp.jsx": "同名コンポへレンダリング差し替え＋Solo",
+    "BPMMaker/BPMMaker.jsx": "BPM目印生成（マーカー/ヌルキーフレーム）",
+    "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー"
   }
 }

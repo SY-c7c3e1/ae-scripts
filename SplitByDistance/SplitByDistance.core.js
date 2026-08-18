@@ -186,20 +186,10 @@
     }
 
     // ============================================================
-    // ピクセル単位モード：格子サンプリングによるオブジェクト検出
+    // ピクセル単位モード：グリッド判定によるオブジェクト検出
     // ============================================================
-
-    // サンプル数上限に収まるよう、グリッド間隔を自動調整
-    function computeGridStep(rectW, rectH, requestedStep, maxSamples) {
-        var step = Math.max(1, requestedStep);
-        var cols = Math.max(1, Math.ceil(rectW / step));
-        var rows = Math.max(1, Math.ceil(rectH / step));
-        if (cols * rows > maxSamples) {
-            var factor = Math.sqrt((cols * rows) / maxSamples);
-            step = Math.ceil(step * factor);
-        }
-        return step;
-    }
+    // ※ detect-objects.js（Node）側では画像の全ピクセルを1マス=1pxとして
+    //   blobsFromForegroundGrid を呼ぶため、間引き用の computeGridStep は不要。
 
     // 0..1 の [r,g,b] 同士のチェビシェフ距離（最大チャンネル差）
     function colorDistance(sample, bg) {
@@ -314,7 +304,6 @@
         unionBox: unionBox,
         computeCompLayout: computeCompLayout,
         uniqueIndexesDescending: uniqueIndexesDescending,
-        computeGridStep: computeGridStep,
         colorDistance: colorDistance,
         classifySample: classifySample,
         blobsFromForegroundGrid: blobsFromForegroundGrid,

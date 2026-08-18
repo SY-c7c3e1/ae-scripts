@@ -8,7 +8,7 @@
 //
 //   検出モードは2種類：
 //     ① レイヤー単位：コンプ内の既存の複数レイヤーを、それぞれの位置で判定
-//     ② ピクセル単位：1枚の画像（1レイヤー）の中身を解析し、
+//     ② ピクセル単位：1枚のPNG画像（1レイヤー）の中身を解析し、
 //        アルファ（透明部分）または背景色（白 / 黒 / 自動判定）をもとに
 //        「離れたオブジェクト」を自動検出する
 //
@@ -19,10 +19,19 @@
 //
 // 判定方法：
 //   ① レイヤー単位：各レイヤーのバウンディングボックス（コンプ座標系）を求める
-//   ② ピクセル単位：レイヤーの中身を格子状にサンプリングし、前景/背景を判定した上で
-//      連結成分（8近傍）ごとにバウンディングボックスを求める
+//   ② ピクセル単位：画像ファイルをNode.js（detect-objects.js）に渡してピクセル単位で
+//      解析し、連結成分（8近傍）ごとにバウンディングボックスを求める
 //   いずれの場合も、得られたボックス間の最短距離が「しきい値」以下のものを
 //   同一グループとして連結する（Union-Find によるクラスタリング）。
+//
+// ピクセル単位モードの必須条件：
+//   ・Node.js がインストールされていて、コマンドラインから node が実行できること
+//     （インストールされていない場合は https://nodejs.org/ から）
+//   ・対象レイヤーが PNG 画像ファイルから読み込まれたフッテージであること
+//     （シェイプレイヤー・テキストレイヤー・プリコンプ・JPEG/PSD等は非対応）
+//   ・After Effects の環境設定 > スクリプトとエクスプレッション で
+//     「スクリプトによるファイルへの書き込みとネットワークへのアクセスを許可」が
+//     オンになっていること（外部コマンド実行に必要）
 //
 // 制限事項：
 //   ・判定は現在の再生ヘッド位置（comp.time）で行う
@@ -30,16 +39,13 @@
 //   ・親子関係が異なるグループにまたがる場合、自動位置調整はスキップされる
 //     （警告として一覧表示されるので、該当レイヤーは手動で確認してください）
 //   ・Position にエクスプレッションが設定されている場合も自動位置調整はスキップされる
-//   ・ピクセル単位モードは、格子状のサンプリング（layer.sampleImage）による近似判定のため、
-//     細い線や小さすぎる要素は検出できない場合がある
 //   ・ピクセル単位モードで生成されるコンポは「矩形クロップ」であり、検出した形状に沿った
 //     マスクは作成されない（余白をしきい値より大きくすると、隣のオブジェクトが写り込む
 //     場合があるので注意）
-//   ・ピクセル単位モードはサンプリング回数が多いと処理に時間がかかる（数十秒〜数分）
 //
 // ロジック本体は SplitByDistance.core.js に分離している（Node上でのテスト対象はそちら）。
 // このファイルは、AEオブジェクトへの実際のアクセス（プロパティ値の取得、レイヤーの
-// コピー・作成、UI）のみを担当する薄いアダプター。
+// コピー・作成、外部コマンドの呼び出し、UI）のみを担当する薄いアダプター。
 
 #include "SplitByDistance.core.js"
 
@@ -49,9 +55,7 @@
     // 定数
     // ============================================================
 
-    var PIXEL_ALPHA_THRESHOLD = 10 / 255;  // これ以下のアルファは背景とみなす
-    var PIXEL_COLOR_TOLERANCE = 30 / 255;  // 背景色からのズレがこれを超えたら前景とみなす
-    var PIXEL_MAX_SAMPLES     = 20000;     // 1レイヤーあたりのサンプリング上限（超える場合は自動で間隔を広げる）
+    var PIXEL_MIN_BLOB_AREA = 4; // これ未満の面積(px^2)の検出はノイズとして除外
 
     // ============================================================
     // ユーティリティ（AEオブジェクトへの実アクセス）
@@ -159,85 +163,88 @@
     }
 
     // ============================================================
-    // ピクセル単位モード：画像の中身を解析して離れたオブジェクトを検出
+    // ピクセル単位モード：画像ファイルをNode.jsに渡して解析する
     // ============================================================
 
-    // レイヤーの四隅付近をサンプリングし、背景の色とアルファを推定
-    function sampleCornerInfo(layer, rect, time) {
-        var inset = Math.min(rect.width, rect.height) * 0.02;
-        if (inset < 1) inset = 1;
-        var sampleSize = [Math.max(2, inset), Math.max(2, inset)];
-        var pts = [
-            [rect.left + inset, rect.top + inset],
-            [rect.left + rect.width - inset, rect.top + inset],
-            [rect.left + inset, rect.top + rect.height - inset],
-            [rect.left + rect.width - inset, rect.top + rect.height - inset]
-        ];
-
-        var sumR = 0, sumG = 0, sumB = 0, sumA = 0;
-        for (var p = 0; p < pts.length; p++) {
-            var s;
-            try { s = layer.sampleImage(pts[p], sampleSize, true, time); } catch (e) { s = [1, 1, 1, 1]; }
-            sumR += s[0]; sumG += s[1]; sumB += s[2]; sumA += s[3];
-        }
-        return {
-            color: [sumR / pts.length, sumG / pts.length, sumB / pts.length],
-            alpha: sumA / pts.length
-        };
+    // レイヤーの元画像ファイル（File）を返す。フッテージ由来でなければ null。
+    function getSourceImageFile(layer) {
+        try {
+            if (layer.source && layer.source.file) return layer.source.file;
+        } catch (e) {}
+        return null;
     }
 
-    // レイヤー1枚を解析し、検出したオブジェクトの「レイヤーローカル矩形」の配列を返す
-    function detectPixelBlobsForLayer(layer, time, bgMode, requestedStep, progressCb) {
-        var rect = layer.sourceRectAtTime(time, false);
-        if (!rect || rect.width <= 0 || rect.height <= 0) return [];
+    // このスクリプト自身と同じフォルダにあるファイルを指す File を返す
+    function findNeighborFile(name) {
+        var thisFile = new File($.fileName);
+        return new File(thisFile.parent.fsName + "/" + name);
+    }
 
-        var step = SplitByDistanceCore.computeGridStep(rect.width, rect.height, requestedStep, PIXEL_MAX_SAMPLES);
-        var cols = Math.max(1, Math.ceil(rect.width / step));
-        var rows = Math.max(1, Math.ceil(rect.height / step));
+    function quoteForShell(pathStr) {
+        return '"' + pathStr.replace(/"/g, '\\"') + '"';
+    }
 
-        var useAlpha = (bgMode === "alpha");
-        var bgColor = null;
-        if (bgMode === "white") bgColor = [1, 1, 1];
-        else if (bgMode === "black") bgColor = [0, 0, 0];
-
-        if (bgMode === "auto" || bgMode === "white" || bgMode === "black") {
-            var corner = sampleCornerInfo(layer, rect, time);
-            if (bgMode === "auto") {
-                useAlpha = corner.alpha < 0.5;
-                if (!useAlpha) bgColor = corner.color;
-            } else if (corner.alpha < 0.5) {
-                // white/black指定でも、実際には透明な背景ならアルファ判定を優先する
-                useAlpha = true;
-            }
+    // detect-objects.js を実行し、検出結果を返す。失敗時は例外をthrowする。
+    // 戻り値: { width, height, blobs:[{left,top,right,bottom}, ...] }（座標は画像のピクセル座標系）
+    function runPixelDetection(imageFile, bgMode) {
+        var scriptFile = findNeighborFile("detect-objects.js");
+        if (!scriptFile.exists) {
+            throw new Error("detect-objects.js が見つかりません。SplitByDistance.jsx と同じフォルダに配置してください。\n(" + scriptFile.fsName + ")");
         }
 
-        var classifyOpts = {
-            useAlpha: useAlpha,
-            bgColor: bgColor,
-            alphaThreshold: PIXEL_ALPHA_THRESHOLD,
-            colorTolerance: PIXEL_COLOR_TOLERANCE
+        var outFile = new File(Folder.temp.fsName + "/sbd_detect_" + Date.now() + "_" + Math.floor(Math.random() * 1e6) + ".json");
+
+        var cmd = "node " + quoteForShell(scriptFile.fsName) + " " + quoteForShell(imageFile.fsName) + " " +
+            quoteForShell(outFile.fsName) + " --bg=" + bgMode + " --minArea=" + PIXEL_MIN_BLOB_AREA;
+
+        var output;
+        try {
+            output = system.callSystem(cmd);
+        } catch (eCall) {
+            throw new Error(
+                "外部コマンドの実行に失敗しました。\n\n" +
+                "After Effects の環境設定 > スクリプトとエクスプレッション で\n" +
+                "「スクリプトによるファイルへの書き込みとネットワークへのアクセスを許可」が\n" +
+                "オンになっているか確認してください。\n\n詳細: " + eCall.toString()
+            );
+        }
+
+        if (!outFile.exists) {
+            throw new Error(
+                "検出結果のファイルが作成されませんでした。Node.js がインストールされているか確認してください\n" +
+                "（コマンドプロンプトで node --version を実行して確認できます。\n" +
+                "未インストールの場合は https://nodejs.org/ から入手してください）。\n\n" +
+                "コマンドの出力:\n" + (output || "(出力なし)")
+            );
+        }
+
+        var json;
+        try {
+            outFile.encoding = "UTF-8";
+            outFile.open("r");
+            var text = outFile.read();
+            outFile.close();
+            json = JSON.parse(text);
+        } catch (eParse) {
+            throw new Error("検出結果の読み込みに失敗しました：" + eParse.toString());
+        } finally {
+            try { outFile.remove(); } catch (eRm) {}
+        }
+
+        return json;
+    }
+
+    // 画像のピクセル座標系の矩形を、レイヤーローカル座標系の矩形へ変換
+    // （sourceRectAtTime の範囲に対して比例配分する。通常は等倍になる）
+    function pixelRectToLayerLocalRect(pixelRect, imgWidth, imgHeight, sourceRect) {
+        var sx = imgWidth > 0 ? (sourceRect.width / imgWidth) : 1;
+        var sy = imgHeight > 0 ? (sourceRect.height / imgHeight) : 1;
+        return {
+            left: sourceRect.left + pixelRect.left * sx,
+            top: sourceRect.top + pixelRect.top * sy,
+            right: sourceRect.left + pixelRect.right * sx,
+            bottom: sourceRect.top + pixelRect.bottom * sy
         };
-
-        var fg = [];
-        var total = cols * rows;
-        var count = 0;
-
-        for (var j = 0; j < rows; j++) {
-            for (var i = 0; i < cols; i++) {
-                var cx = rect.left + i * step + step / 2;
-                var cy = rect.top + j * step + step / 2;
-                var samp;
-                try { samp = layer.sampleImage([cx, cy], [step, step], true, time); }
-                catch (eS) { samp = [0, 0, 0, 0]; }
-
-                fg[j * cols + i] = SplitByDistanceCore.classifySample(samp, classifyOpts);
-
-                count++;
-                if (progressCb && (count % 200 === 0 || count === total)) progressCb(count, total);
-            }
-        }
-
-        return SplitByDistanceCore.blobsFromForegroundGrid(fg, cols, rows, rect, step);
     }
 
     // ============================================================
@@ -322,13 +329,6 @@
     secAdvanced.margins = [10, 14, 10, 10];
     secAdvanced.spacing = 6;
 
-    var rowGrid = secAdvanced.add("group");
-    rowGrid.alignment = "fill";
-    rowGrid.add("statictext", undefined, "解析グリッド間隔 (px)：");
-    var txtGridStep = rowGrid.add("edittext", undefined, "8");
-    txtGridStep.characters = 6;
-    txtGridStep.helpTip = "ピクセル単位モードのみで使用。小さいほど精密ですが処理が遅くなります";
-
     var rowPrefix = secAdvanced.add("group");
     rowPrefix.alignment = "fill";
     rowPrefix.add("statictext", undefined, "コンプ名の接頭辞：");
@@ -352,7 +352,6 @@
     function updatePixelPanelEnabled() {
         var on = rdModePixel.value;
         secPixel.enabled = on;
-        rowGrid.enabled = on;
         chkSelectedOnly.value = on ? true : chkSelectedOnly.value;
         chkSelectedOnly.enabled = !on;
     }
@@ -389,91 +388,72 @@
         var skipped = [];
 
         if (pixelMode) {
-            // ── ピクセル単位モード：選択レイヤーを解析 ──
+            // ── ピクセル単位モード：選択レイヤーを解析（Node.jsの detect-objects.js に委譲） ──
             var sel = comp.selectedLayers;
             if (!sel || sel.length === 0) { alert("ピクセル単位モードでは、解析するレイヤーを選択してください。"); return; }
 
             var pixelCandidates = [];
+            var invalidLayers = [];
             for (var s0 = 0; s0 < sel.length; s0++) {
-                if (isTargetLayer(sel[s0], includeHidden)) pixelCandidates.push(sel[s0]);
+                var candLayer = sel[s0];
+                if (!isTargetLayer(candLayer, includeHidden)) continue;
+                var srcFile = getSourceImageFile(candLayer);
+                if (!srcFile || !/\.png$/i.test(srcFile.fsName)) {
+                    invalidLayers.push(candLayer.name);
+                    continue;
+                }
+                pixelCandidates.push({ layer: candLayer, file: srcFile });
             }
-            if (pixelCandidates.length === 0) { alert("対象になるレイヤーが見つかりませんでした。"); return; }
 
-            var gridStepInput = parseFloat(txtGridStep.text);
-            if (isNaN(gridStepInput) || gridStepInput < 1) { alert("解析グリッド間隔には1以上の数値を入力してください。"); return; }
+            if (pixelCandidates.length === 0) {
+                alert(
+                    "対象になるレイヤーが見つかりませんでした。\n\n" +
+                    "ピクセル単位モードは、PNG画像ファイルから読み込んだレイヤーのみに対応しています" +
+                    "（シェイプレイヤー、テキストレイヤー、プリコンプ、JPEG/PSD等は非対応です）。" +
+                    (invalidLayers.length ? "\n\n対象外のレイヤー: " + invalidLayers.join(", ") : "")
+                );
+                return;
+            }
 
             var bgMode = "auto";
             if (rdBgAlpha.value) bgMode = "alpha";
             else if (rdBgWhite.value) bgMode = "white";
             else if (rdBgBlack.value) bgMode = "black";
 
-            // sampleImage が実際に使えるか、本処理の前に1点だけ試す
-            // （失敗しても内部で握りつぶさず、原因を表示して中断する）
-            var diag = null;
-            try {
-                var testLayer = pixelCandidates[0];
-                var testRect = testLayer.sourceRectAtTime(time, false);
-                if (!testRect || testRect.width <= 0 || testRect.height <= 0) {
-                    diag = "レイヤーのサイズが取得できませんでした（sourceRectAtTimeの結果が空）。";
-                } else {
-                    var testPt = [testRect.left + testRect.width / 2, testRect.top + testRect.height / 2];
-                    var testSamp = testLayer.sampleImage(testPt, [4, 4], true, time);
-                    if (!testSamp || testSamp.length < 4) {
-                        diag = "sampleImageの戻り値が不正です: " + (testSamp ? testSamp.toString() : "null/undefined");
-                    }
-                }
-            } catch (eTest) {
-                diag = "sampleImageの呼び出しでエラーが発生しました：\n" + eTest.toString();
-            }
-            if (diag) {
-                alert(
-                    "ピクセル単位モードを実行できませんでした。\n\n" + diag +
-                    "\n\nこのAEのバージョンでは layer.sampleImage が想定通りに動作していない可能性があります。" +
-                    "上記のエラー内容を開発者にお伝えください。"
-                );
-                return;
-            }
-
-            // 事前見積もり（サンプル数）
-            var estTotal = 0;
-            for (var e = 0; e < pixelCandidates.length; e++) {
-                var r0 = pixelCandidates[e].sourceRectAtTime(time, false);
-                if (!r0 || r0.width <= 0 || r0.height <= 0) continue;
-                var st0 = SplitByDistanceCore.computeGridStep(r0.width, r0.height, gridStepInput, PIXEL_MAX_SAMPLES);
-                estTotal += Math.ceil(r0.width / st0) * Math.ceil(r0.height / st0);
-            }
-
-            var proceedPixel = confirm(
-                "【Split By Distance：ピクセル解析】\n" +
-                "対象レイヤー数: " + pixelCandidates.length + "\n" +
-                "推定サンプル数: 約" + estTotal + "\n\n" +
-                "画像の内容によっては解析に数十秒〜数分かかる場合があります。\n続行しますか？"
-            );
-            if (!proceedPixel) return;
-
             for (var pc = 0; pc < pixelCandidates.length; pc++) {
-                var pLayer = pixelCandidates[pc];
+                var pLayer = pixelCandidates[pc].layer;
+                var pFile = pixelCandidates[pc].file;
+
                 lblProgress.text = "解析中: " + pLayer.name;
                 dlg.update();
 
-                var blobs = detectPixelBlobsForLayer(pLayer, time, bgMode, gridStepInput, function (done, total) {
-                    lblProgress.text = "解析中: " + pLayer.name + " (" + done + " / " + total + ")";
-                    dlg.update();
-                });
+                var detectResult;
+                try {
+                    detectResult = runPixelDetection(pFile, bgMode);
+                } catch (eDetect) {
+                    lblProgress.text = "";
+                    alert("ピクセル解析でエラーが発生しました（" + pLayer.name + "）：\n\n" + eDetect.message);
+                    return;
+                }
 
-                if (blobs.length === 0) {
+                if (!detectResult.blobs || detectResult.blobs.length === 0) {
                     skipped.push(pLayer.name + "（検出0件）");
                     continue;
                 }
-                for (var bb = 0; bb < blobs.length; bb++) {
+
+                var srcRect = pLayer.sourceRectAtTime(time, false);
+                for (var bb = 0; bb < detectResult.blobs.length; bb++) {
+                    var localRect = pixelRectToLayerLocalRect(detectResult.blobs[bb], detectResult.width, detectResult.height, {
+                        left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height
+                    });
                     var chain = buildTransformChain(pLayer, time);
-                    var aabb = SplitByDistanceCore.aabbFromLocalRect(chain, blobs[bb]);
+                    var aabb = SplitByDistanceCore.aabbFromLocalRect(chain, localRect);
                     items.push({ layer: pLayer, index: pLayer.index, box: aabb, used3D: aabb.used3D });
                 }
             }
             lblProgress.text = "";
 
-            if (items.length === 0) { alert("オブジェクトを検出できませんでした。背景の判定方法やグリッド間隔を見直してください。"); return; }
+            if (items.length === 0) { alert("オブジェクトを検出できませんでした。背景の判定方法を見直してください。"); return; }
 
         } else {
             // ── レイヤー単位モード（既存の複数レイヤーで判定） ──

@@ -179,19 +179,6 @@ test("uniqueIndexesDescending: 重複を除いてindex降順に並べる", () =>
     assert.deepEqual(Core.uniqueIndexesDescending([0, 1, 2, 3], items), [8, 5, 3]);
 });
 
-// ── computeGridStep ─────────────────────────────────────────────────
-
-test("computeGridStep: サンプル数が上限内ならそのまま", () => {
-    assert.equal(Core.computeGridStep(100, 50, 8, 20000), 8);
-});
-
-test("computeGridStep: 上限を超える場合は間隔を自動で広げる", () => {
-    const step = Core.computeGridStep(2000, 2000, 1, 100);
-    const cols = Math.ceil(2000 / step);
-    const rows = Math.ceil(2000 / step);
-    assert.ok(cols * rows <= 100, "cols*rows=" + (cols * rows) + " should be <= 100");
-});
-
 // ── colorDistance / classifySample ──────────────────────────────────
 
 test("colorDistance: 同じ色なら0", () => {

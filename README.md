@@ -29,6 +29,15 @@ A collection of free After Effects scripts for motion design and live concert vi
 | [BPMMaker](./BPMMaker/) | Place beat markers or null keyframes at a given BPM |
 | [FileViewer](./FileViewer/) | View text extracted from Word/PDF/Excel files inside After Effects |
 
+## Illustrator Scripts
+
+After Effects向けが中心のリポジトリだが、Illustrator用の小さなユーティリティ
+スクリプトもここに置いている。
+
+| Script | Description |
+|---|---|
+| [GroupsToLayers](./Illustrator/GroupsToLayers/) | Split each group inside a layer out into its own layer |
+
 ## Expressions（エクスプレッション置き場）
 
 完成した「スクリプト」ではなく、レイヤーのプロパティに直接貼り付けて使う

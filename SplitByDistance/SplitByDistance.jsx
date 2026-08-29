@@ -420,6 +420,8 @@
             else if (rdBgWhite.value) bgMode = "white";
             else if (rdBgBlack.value) bgMode = "black";
 
+            var pixelDiagnostics = [];
+
             for (var pc = 0; pc < pixelCandidates.length; pc++) {
                 var pLayer = pixelCandidates[pc].layer;
                 var pFile = pixelCandidates[pc].file;
@@ -441,6 +443,25 @@
                     continue;
                 }
 
+                // 診断情報：実際に使われた背景判定方法と、検出範囲の合計（画像全体との比較用）
+                var pxUnion = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+                for (var db = 0; db < detectResult.blobs.length; db++) {
+                    var dbx = detectResult.blobs[db];
+                    if (dbx.left < pxUnion.left) pxUnion.left = dbx.left;
+                    if (dbx.top < pxUnion.top) pxUnion.top = dbx.top;
+                    if (dbx.right > pxUnion.right) pxUnion.right = dbx.right;
+                    if (dbx.bottom > pxUnion.bottom) pxUnion.bottom = dbx.bottom;
+                }
+                pixelDiagnostics.push(
+                    pLayer.name + "：背景判定=" + (detectResult.useAlpha ? "アルファ" : "色" +
+                        (detectResult.bgColor ? "(R" + Math.round(detectResult.bgColor[0] * 255) +
+                            " G" + Math.round(detectResult.bgColor[1] * 255) +
+                            " B" + Math.round(detectResult.bgColor[2] * 255) + ")" : "")) +
+                    " / 画像サイズ=" + detectResult.width + "x" + detectResult.height +
+                    " / 検出数=" + detectResult.blobs.length +
+                    " / 検出範囲=(" + pxUnion.left + "," + pxUnion.top + ")-(" + pxUnion.right + "," + pxUnion.bottom + ")"
+                );
+
                 var srcRect = pLayer.sourceRectAtTime(time, false);
                 for (var bb = 0; bb < detectResult.blobs.length; bb++) {
                     var localRect = pixelRectToLayerLocalRect(detectResult.blobs[bb], detectResult.width, detectResult.height, {
@@ -454,6 +475,10 @@
             lblProgress.text = "";
 
             if (items.length === 0) { alert("オブジェクトを検出できませんでした。背景の判定方法を見直してください。"); return; }
+
+            if (pixelDiagnostics.length > 0) {
+                alert("【診断情報】\n" + pixelDiagnostics.join("\n"));
+            }
 
         } else {
             // ── レイヤー単位モード（既存の複数レイヤーで判定） ──

@@ -46,9 +46,12 @@
     this.cachedScript="";
   }
    ScriptItem.prototype.importSettings=function(savedScriptItem){
-     for(var s in savedScriptItem){
-       this[s]=savedScriptItem[s]
-     }
+     // NEW: only carry over the two things the settings file is actually meant to persist
+     // (keyboard shortcut and color label). Blindly copying every saved field used to
+     // also overwrite fullPath/fileName/folderName with whatever was saved last time,
+     // which could pin a script to a stale, no-longer-correct file path.
+     if(savedScriptItem.shortcut!==undefined) this.shortcut=savedScriptItem.shortcut;
+     if(savedScriptItem.color!==undefined) this.color=savedScriptItem.color;
    }
 
    //updates data item by script's data
@@ -114,6 +117,13 @@
          bt.body = scriptString;
        else {
          //consider expanding this to deal with unordhodox scripts approaches:::::::::::::::::
+         //NEW: rewrite relative #include paths to absolute ones based on this script's
+         //own folder, since eval()'d code loses the file's own directory context
+         var scriptFolder = ("" + file.parent.fsName).replace(/\\/g, "/");
+         scriptString = scriptString.replace(/#include\s+["']([^"']+)["']/g, function(m, incPath) {
+           if (/^([a-zA-Z]:[\\\/]|\/|~)/.test(incPath)) return m;
+           return '#include "' + scriptFolder + "/" + incPath.replace(/\\\\/g,"/") + '"';
+         });
          scriptString = scriptString.replaceAll(escapeRegExp("$.fileName"), "('" + file + "')")
          var message = "var btCoded ='" + BTEncode(scriptString) + "';\neval(decodeURI( btCoded ));\n";
          bt.body = message;

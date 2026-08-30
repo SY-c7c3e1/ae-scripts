@@ -45,7 +45,7 @@
     }
 
     // ── UI ──────────────────────────────────────────────────────
-    var dlg = new Window("dialog", "Groups to Layers [v2-test]");
+    var dlg = new Window("dialog", "Groups to Layers");
     dlg.orientation = "column";
     dlg.alignChildren = ["fill", "top"];
     dlg.spacing = 10;

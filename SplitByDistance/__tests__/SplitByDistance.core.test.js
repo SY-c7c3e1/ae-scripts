@@ -94,6 +94,18 @@ test("aabbFromLocalRect: 90度回転すると幅と高さが入れ替わったAA
     assert.ok(closeTo(box.bottom - box.top, 100, 1e-6));
 });
 
+// ── bboxFromVertices ────────────────────────────────────────────────
+
+test("bboxFromVertices: 頂点群からバウンディングボックスを求める", () => {
+    const box = Core.bboxFromVertices([[10, 20], [50, 5], [30, 60], [-5, 40]]);
+    assert.deepEqual(box, { left: -5, top: 5, right: 50, bottom: 60 });
+});
+
+test("bboxFromVertices: 頂点1つでも動作する", () => {
+    const box = Core.bboxFromVertices([[7, 9]]);
+    assert.deepEqual(box, { left: 7, top: 9, right: 7, bottom: 9 });
+});
+
 // ── boxDistance ───────────────────────────────────────────────────
 
 test("boxDistance: 重なっているボックスは距離0", () => {

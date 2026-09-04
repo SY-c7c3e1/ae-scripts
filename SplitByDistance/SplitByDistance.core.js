@@ -94,6 +94,23 @@
     }
 
     // ============================================================
+    // マスク単位モード：マスクの頂点からバウンディングボックスを求める
+    // ============================================================
+
+    // vertices: [[x,y], ...]（レイヤーローカル座標系。マスクパスの頂点）
+    function bboxFromVertices(vertices) {
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var v = 0; v < vertices.length; v++) {
+            var px = vertices[v][0], py = vertices[v][1];
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+        }
+        return { left: minX, top: minY, right: maxX, bottom: maxY };
+    }
+
+    // ============================================================
     // クラスタリング（距離ベース Union-Find）
     // ============================================================
 
@@ -297,6 +314,7 @@
         buildCompName: buildCompName,
         transformPointThroughChain: transformPointThroughChain,
         aabbFromLocalRect: aabbFromLocalRect,
+        bboxFromVertices: bboxFromVertices,
         boxDistance: boxDistance,
         ufFind: ufFind,
         ufUnion: ufUnion,

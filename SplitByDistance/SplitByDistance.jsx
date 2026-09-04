@@ -6,11 +6,15 @@
 //   「近くにあるもの同士」でグループ化し、グループ（＝離れたオブジェクト）ごとに
 //   新規コンポジションへ自動で振り分けるスクリプト。
 //
-//   検出モードは2種類：
+//   検出モードは3種類：
 //     ① レイヤー単位：コンプ内の既存の複数レイヤーを、それぞれの位置で判定
-//     ② ピクセル単位：1枚のPNG画像（1レイヤー）の中身を解析し、
+//     ② マスク単位：1枚の画像（1レイヤー）に付けられた複数のマスクを、
+//        マスクごとに1オブジェクトとして扱う（AE純正の「オートトレース」で
+//        離れた図形を自動でマスク化してから使う）
+//     ③ ピクセル単位：1枚のPNG画像（1レイヤー）の中身をNode.jsで解析し、
 //        アルファ（透明部分）または背景色（白 / 黒 / 自動判定）をもとに
-//        「離れたオブジェクト」を自動検出する
+//        「離れたオブジェクト」を自動検出する（実験的・非推奨。②が使えない
+//        特殊なケース向け。まずは②を試してください）
 //
 // 使い方：
 //   1. 対象コンポを開く（必要なら対象レイヤーを選択）
@@ -19,12 +23,21 @@
 //
 // 判定方法：
 //   ① レイヤー単位：各レイヤーのバウンディングボックス（コンプ座標系）を求める
-//   ② ピクセル単位：画像ファイルをNode.js（detect-objects.js）に渡してピクセル単位で
+//   ② マスク単位：選択レイヤーの各マスクのパス頂点からバウンディングボックスを求める。
+//      コピー先のコンポでは、そのマスク以外は無効化されるため、検出した形状の輪郭で
+//      正確にクロップされる（矩形クロップではない）
+//   ③ ピクセル単位：画像ファイルをNode.js（detect-objects.js）に渡してピクセル単位で
 //      解析し、連結成分（8近傍）ごとにバウンディングボックスを求める
 //   いずれの場合も、得られたボックス間の最短距離が「しきい値」以下のものを
 //   同一グループとして連結する（Union-Find によるクラスタリング）。
 //
-// ピクセル単位モードの必須条件：
+// マスク単位モードの前提：
+//   ・対象レイヤーに、離れた図形ごとの有効なマスク（反転していない、モードがNone以外）が
+//     付いていること。1枚の画像から複数の離れた図形を検出したい場合は、あらかじめ
+//     レイヤーを選択して メニュー → レイヤー → オートトレース... を実行し、
+//     チャンネル=アルファ 等の設定でマスクを自動生成しておく
+//
+// ピクセル単位モードの必須条件（実験的機能）：
 //   ・Node.js がインストールされていて、コマンドラインから node が実行できること
 //     （インストールされていない場合は https://nodejs.org/ から）
 //   ・対象レイヤーが PNG 画像ファイルから読み込まれたフッテージであること
@@ -41,7 +54,7 @@
 //   ・Position にエクスプレッションが設定されている場合も自動位置調整はスキップされる
 //   ・ピクセル単位モードで生成されるコンポは「矩形クロップ」であり、検出した形状に沿った
 //     マスクは作成されない（余白をしきい値より大きくすると、隣のオブジェクトが写り込む
-//     場合があるので注意）
+//     場合があるので注意）。マスク単位モードにはこの制限はない。
 //
 // ロジック本体は SplitByDistance.core.js に分離している（Node上でのテスト対象はそちら）。
 // このファイルは、AEオブジェクトへの実際のアクセス（プロパティ値の取得、レイヤーの
@@ -163,6 +176,52 @@
     }
 
     // ============================================================
+    // マスク単位モード：レイヤーの各マスクをオブジェクトとして扱う
+    // ============================================================
+
+    // レイヤーの有効なマスク（反転していない、モードがNone以外）を列挙し、
+    // それぞれのバウンディングボックス（レイヤーローカル座標系）を返す
+    // 戻り値: [{ maskIndex, rect }, ...]（maskIndexは1始まり、ADBE Mask Parade内の順序）
+    function getLayerMaskRects(layer, time) {
+        var results = [];
+        var maskGroup;
+        try { maskGroup = layer.property("ADBE Mask Parade"); } catch (e) { return results; }
+        if (!maskGroup) return results;
+
+        for (var i = 1; i <= maskGroup.numProperties; i++) {
+            try {
+                var m = maskGroup.property(i);
+                if (m.maskMode === MaskMode.NONE) continue;
+                if (m.inverted) continue;
+
+                var shapeProp = m.property("ADBE Mask Shape");
+                var shape = shapeProp.valueAtTime(time, false);
+                var verts = shape ? shape.vertices : null;
+                if (!verts || verts.length === 0) continue;
+
+                results.push({ maskIndex: i, rect: SplitByDistanceCore.bboxFromVertices(verts) });
+            } catch (eM) {}
+        }
+        return results;
+    }
+
+    // newLayer上のマスクのうち、keepIndexesに含まれないものを無効化する
+    // （コピー元と同じ並び・数のマスクが複製されている前提）
+    function disableMasksExcept(newLayer, keepIndexes) {
+        var keepSet = {};
+        for (var k = 0; k < keepIndexes.length; k++) keepSet[keepIndexes[k]] = true;
+
+        var maskGroup;
+        try { maskGroup = newLayer.property("ADBE Mask Parade"); } catch (e) { return; }
+        if (!maskGroup) return;
+
+        for (var i = 1; i <= maskGroup.numProperties; i++) {
+            if (keepSet[i]) continue;
+            try { maskGroup.property(i).maskMode = MaskMode.NONE; } catch (eD) {}
+        }
+    }
+
+    // ============================================================
     // ピクセル単位モード：画像ファイルをNode.jsに渡して解析する
     // ============================================================
 
@@ -267,7 +326,8 @@
     secMode.spacing = 5;
 
     var rdModeLayer = secMode.add("radiobutton", undefined, "レイヤー単位（複数レイヤーを位置でグループ化）");
-    var rdModePixel = secMode.add("radiobutton", undefined, "ピクセル単位（1枚の画像を自動解析）");
+    var rdModeMask  = secMode.add("radiobutton", undefined, "マスク単位（1枚の画像のマスクごとに分割・おすすめ）");
+    var rdModePixel = secMode.add("radiobutton", undefined, "ピクセル単位（1枚の画像を自動解析・実験的機能）");
     rdModeLayer.value = true;
 
     // ── 対象 ──
@@ -349,15 +409,16 @@
         dlg.layout.layout(true);
     };
 
-    function updatePixelPanelEnabled() {
-        var on = rdModePixel.value;
-        secPixel.enabled = on;
-        chkSelectedOnly.value = on ? true : chkSelectedOnly.value;
-        chkSelectedOnly.enabled = !on;
+    function updateModeUI() {
+        var needsSelection = rdModePixel.value || rdModeMask.value;
+        secPixel.enabled = rdModePixel.value;
+        chkSelectedOnly.value = needsSelection ? true : chkSelectedOnly.value;
+        chkSelectedOnly.enabled = !needsSelection;
     }
-    rdModeLayer.onClick = updatePixelPanelEnabled;
-    rdModePixel.onClick = updatePixelPanelEnabled;
-    updatePixelPanelEnabled();
+    rdModeLayer.onClick = updateModeUI;
+    rdModeMask.onClick = updateModeUI;
+    rdModePixel.onClick = updateModeUI;
+    updateModeUI();
 
     // ── 実行 / 閉じる ──
     var runGroup = dlg.add("group");
@@ -381,13 +442,13 @@
         if (isNaN(margin) || margin < 0) { alert("余白には0以上の数値を入力してください。"); return; }
 
         var includeHidden = chkIncludeHidden.value;
-        var pixelMode = rdModePixel.value;
+        var mode = rdModePixel.value ? "pixel" : (rdModeMask.value ? "mask" : "layer");
         var time = comp.time;
 
-        var items = []; // {layer, index, box, used3D}
+        var items = []; // {layer, index, box, used3D, maskIndex?}
         var skipped = [];
 
-        if (pixelMode) {
+        if (mode === "pixel") {
             // ── ピクセル単位モード：選択レイヤーを解析（Node.jsの detect-objects.js に委譲） ──
             var sel = comp.selectedLayers;
             if (!sel || sel.length === 0) { alert("ピクセル単位モードでは、解析するレイヤーを選択してください。"); return; }
@@ -480,6 +541,42 @@
                 alert("【診断情報】\n" + pixelDiagnostics.join("\n"));
             }
 
+        } else if (mode === "mask") {
+            // ── マスク単位モード：選択レイヤーの各マスクを1オブジェクトとして扱う ──
+            var selM = comp.selectedLayers;
+            if (!selM || selM.length === 0) { alert("マスク単位モードでは、対象レイヤーを選択してください。"); return; }
+
+            var maskCandidates = [];
+            for (var sm = 0; sm < selM.length; sm++) {
+                if (isTargetLayer(selM[sm], includeHidden)) maskCandidates.push(selM[sm]);
+            }
+            if (maskCandidates.length === 0) { alert("対象になるレイヤーが見つかりませんでした。"); return; }
+
+            for (var mc = 0; mc < maskCandidates.length; mc++) {
+                var mLayer = maskCandidates[mc];
+                var maskRects = getLayerMaskRects(mLayer, time);
+
+                if (maskRects.length === 0) {
+                    skipped.push(mLayer.name + "（有効なマスクなし）");
+                    continue;
+                }
+
+                var chainM = buildTransformChain(mLayer, time);
+                for (var mr = 0; mr < maskRects.length; mr++) {
+                    var aabbM = SplitByDistanceCore.aabbFromLocalRect(chainM, maskRects[mr].rect);
+                    items.push({ layer: mLayer, index: mLayer.index, box: aabbM, used3D: aabbM.used3D, maskIndex: maskRects[mr].maskIndex });
+                }
+            }
+
+            if (items.length === 0) {
+                alert(
+                    "有効なマスクを持つレイヤーが見つかりませんでした。\n\n" +
+                    "先に対象レイヤーを選択して メニュー → レイヤー → オートトレース... を実行し、" +
+                    "マスクを作成してから実行してください。"
+                );
+                return;
+            }
+
         } else {
             // ── レイヤー単位モード（既存の複数レイヤーで判定） ──
             var selectedOnly = chkSelectedOnly.value;
@@ -552,13 +649,18 @@
                 if (targetFolder) newComp.parentFolder = targetFolder;
 
                 // クラスタ内で参照されているレイヤーを重複なく、元のスタック順で集める
-                // （ピクセル単位モードでは、同じ画像から複数オブジェクトが同じクラスタに
-                // 含まれることがあるため、レイヤー自体は1回だけコピーする）
+                // （ピクセル単位／マスク単位モードでは、同じレイヤーから複数オブジェクトが
+                // 同じクラスタに含まれることがあるため、レイヤー自体は1回だけコピーする）
                 var uniqueIndexes = SplitByDistanceCore.uniqueIndexesDescending(clusterItemIdxs, items);
                 var layerByIndex = {};
+                var maskIndexesByLayerIndex = {}; // マスク単位モードでのみ使用
                 for (var u2 = 0; u2 < clusterItemIdxs.length; u2++) {
                     var itm = items[clusterItemIdxs[u2]];
                     layerByIndex[itm.index] = itm.layer;
+                    if (itm.maskIndex !== undefined) {
+                        if (!maskIndexesByLayerIndex[itm.index]) maskIndexesByLayerIndex[itm.index] = [];
+                        maskIndexesByLayerIndex[itm.index].push(itm.maskIndex);
+                    }
                 }
 
                 for (var si = 0; si < uniqueIndexes.length; si++) {
@@ -570,6 +672,10 @@
 
                     srcLayer.copyToComp(newComp);
                     var newLayer = newComp.layer(1);
+
+                    if (mode === "mask") {
+                        disableMasksExcept(newLayer, maskIndexesByLayerIndex[uniqueIndexes[si]] || []);
+                    }
 
                     var hasParent = false;
                     try { hasParent = !!newLayer.parent; } catch (eP) { hasParent = false; }

@@ -94,7 +94,7 @@
     }
 
     // ============================================================
-    // マスク単位モード：マスクの頂点からバウンディングボックスを求める
+    // マスクの頂点からバウンディングボックスを求める
     // ============================================================
 
     // vertices: [[x,y], ...]（レイヤーローカル座標系。マスクパスの頂点）
@@ -110,171 +110,16 @@
         return { left: minX, top: minY, right: maxX, bottom: maxY };
     }
 
-    // ============================================================
-    // クラスタリング（距離ベース Union-Find）
-    // ============================================================
-
-    function boxDistance(a, b) {
-        var dx = Math.max(a.left - b.right, b.left - a.right, 0);
-        var dy = Math.max(a.top - b.bottom, b.top - a.bottom, 0);
-        if (dx === 0 && dy === 0) return 0;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function ufFind(parent, i) {
-        while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; }
-        return i;
-    }
-    function ufUnion(parent, rank, a, b) {
-        var ra = ufFind(parent, a), rb = ufFind(parent, b);
-        if (ra === rb) return;
-        if (rank[ra] < rank[rb]) { parent[ra] = rb; }
-        else if (rank[ra] > rank[rb]) { parent[rb] = ra; }
-        else { parent[rb] = ra; rank[ra]++; }
-    }
-
-    // boxes: [{left,top,right,bottom}, ...]
-    // 戻り値: クラスタの配列。各クラスタは boxes への添字の配列。
-    function clusterByDistance(boxes, threshold) {
-        var n = boxes.length;
-        var parent = [], rank = [];
-        for (var i = 0; i < n; i++) { parent[i] = i; rank[i] = 0; }
-
-        for (var a = 0; a < n; a++) {
-            for (var b = a + 1; b < n; b++) {
-                if (boxDistance(boxes[a], boxes[b]) <= threshold) {
-                    ufUnion(parent, rank, a, b);
-                }
-            }
-        }
-
-        var groupsMap = {};
-        for (var g = 0; g < n; g++) {
-            var root = ufFind(parent, g);
-            if (!groupsMap[root]) groupsMap[root] = [];
-            groupsMap[root].push(g);
-        }
-        var clusters = [];
-        for (var key in groupsMap) {
-            if (groupsMap.hasOwnProperty(key)) clusters.push(groupsMap[key]);
-        }
-        return clusters;
-    }
-
-    // indexes（boxesへの添字配列）が指すボックス群の外接矩形
-    function unionBox(boxes, indexes) {
-        var ub = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
-        for (var i = 0; i < indexes.length; i++) {
-            var bx = boxes[indexes[i]];
-            if (bx.left   < ub.left)   ub.left   = bx.left;
-            if (bx.top    < ub.top)    ub.top    = bx.top;
-            if (bx.right  > ub.right)  ub.right  = bx.right;
-            if (bx.bottom > ub.bottom) ub.bottom = bx.bottom;
-        }
-        return ub;
-    }
-
     // 新規コンプのサイズ（1..maxSizeにクランプ）とオフセットを計算
-    function computeCompLayout(ub, margin, maxSize) {
-        var width  = Math.min(maxSize, Math.max(1, Math.ceil((ub.right - ub.left) + margin * 2)));
-        var height = Math.min(maxSize, Math.max(1, Math.ceil((ub.bottom - ub.top) + margin * 2)));
+    function computeCompLayout(box, margin, maxSize) {
+        var width  = Math.min(maxSize, Math.max(1, Math.ceil((box.right - box.left) + margin * 2)));
+        var height = Math.min(maxSize, Math.max(1, Math.ceil((box.bottom - box.top) + margin * 2)));
         return {
             width: width,
             height: height,
-            offsetX: ub.left - margin,
-            offsetY: ub.top - margin
+            offsetX: box.left - margin,
+            offsetY: box.top - margin
         };
-    }
-
-    // items: [{index, ...}, ...] / itemIndexesInCluster: items への添字配列
-    // 同じ index（＝同じレイヤー）が複数の item から参照されていても1回だけ扱い、
-    // 元のスタック順を保つため index 降順（下＝index大 → 上＝index小の順にコピーする用途）で返す
-    function uniqueIndexesDescending(itemIndexesInCluster, items) {
-        var seen = {};
-        var result = [];
-        for (var i = 0; i < itemIndexesInCluster.length; i++) {
-            var idxVal = items[itemIndexesInCluster[i]].index;
-            if (seen[idxVal]) continue;
-            seen[idxVal] = true;
-            result.push(idxVal);
-        }
-        result.sort(function (x, y) { return y - x; });
-        return result;
-    }
-
-    // ============================================================
-    // ピクセル単位モード：グリッド判定によるオブジェクト検出
-    // ============================================================
-    // ※ detect-objects.js（Node）側では画像の全ピクセルを1マス=1pxとして
-    //   blobsFromForegroundGrid を呼ぶため、間引き用の computeGridStep は不要。
-
-    // 0..1 の [r,g,b] 同士のチェビシェフ距離（最大チャンネル差）
-    function colorDistance(sample, bg) {
-        var dr = Math.abs(sample[0] - bg[0]);
-        var dg = Math.abs(sample[1] - bg[1]);
-        var db = Math.abs(sample[2] - bg[2]);
-        return Math.max(dr, dg, db);
-    }
-
-    // sample: [r,g,b,a] (0..1) / opts: {useAlpha, bgColor:[r,g,b], alphaThreshold, colorTolerance}
-    function classifySample(sample, opts) {
-        if (sample[3] <= opts.alphaThreshold) return false;
-        if (opts.useAlpha) return true;
-        return colorDistance(sample, opts.bgColor) > opts.colorTolerance;
-    }
-
-    // fg: 前景判定済みの boolean 配列（長さ cols*rows、行優先 = y*cols+x）
-    // rect: {left, top, width, height}（レイヤーローカル座標系。グリッドの原点）
-    // 戻り値: レイヤーローカル座標系の矩形配列 [{left,top,right,bottom}, ...]（8近傍で連結）
-    function blobsFromForegroundGrid(fg, cols, rows, rect, step) {
-        function idx(x, y) { return y * cols + x; }
-
-        var n = cols * rows;
-        var parent = [], rank = [];
-        for (var k = 0; k < n; k++) { parent[k] = k; rank[k] = 0; }
-
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                if (!fg[idx(x, y)]) continue;
-                var cand = [[x + 1, y], [x, y + 1], [x + 1, y + 1], [x - 1, y + 1]];
-                for (var ci = 0; ci < cand.length; ci++) {
-                    var nx = cand[ci][0], ny = cand[ci][1];
-                    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-                    if (fg[idx(nx, ny)]) ufUnion(parent, rank, idx(x, y), idx(nx, ny));
-                }
-            }
-        }
-
-        var groups = {};
-        for (var y2 = 0; y2 < rows; y2++) {
-            for (var x2 = 0; x2 < cols; x2++) {
-                if (!fg[idx(x2, y2)]) continue;
-                var root = ufFind(parent, idx(x2, y2));
-                if (!groups[root]) groups[root] = { minX: x2, minY: y2, maxX: x2, maxY: y2 };
-                else {
-                    var gEntry = groups[root];
-                    if (x2 < gEntry.minX) gEntry.minX = x2;
-                    if (x2 > gEntry.maxX) gEntry.maxX = x2;
-                    if (y2 < gEntry.minY) gEntry.minY = y2;
-                    if (y2 > gEntry.maxY) gEntry.maxY = y2;
-                }
-            }
-        }
-
-        var maxRight  = rect.left + rect.width;
-        var maxBottom = rect.top + rect.height;
-        var blobs = [];
-        for (var gk in groups) {
-            if (!groups.hasOwnProperty(gk)) continue;
-            var gg = groups[gk];
-            blobs.push({
-                left:   rect.left + gg.minX * step,
-                top:    rect.top  + gg.minY * step,
-                right:  Math.min(maxRight,  rect.left + (gg.maxX + 1) * step),
-                bottom: Math.min(maxBottom, rect.top  + (gg.maxY + 1) * step)
-            });
-        }
-        return blobs;
     }
 
     // ============================================================
@@ -315,16 +160,7 @@
         transformPointThroughChain: transformPointThroughChain,
         aabbFromLocalRect: aabbFromLocalRect,
         bboxFromVertices: bboxFromVertices,
-        boxDistance: boxDistance,
-        ufFind: ufFind,
-        ufUnion: ufUnion,
-        clusterByDistance: clusterByDistance,
-        unionBox: unionBox,
         computeCompLayout: computeCompLayout,
-        uniqueIndexesDescending: uniqueIndexesDescending,
-        colorDistance: colorDistance,
-        classifySample: classifySample,
-        blobsFromForegroundGrid: blobsFromForegroundGrid,
         shiftVectorProp: shiftVectorProp,
         shiftScalarProp: shiftScalarProp
     };

@@ -179,8 +179,11 @@
     // マスク単位モード：レイヤーの各マスクをオブジェクトとして扱う
     // ============================================================
 
-    // レイヤーの有効なマスク（反転していない、モードがNone以外）を列挙し、
-    // それぞれのバウンディングボックス（レイヤーローカル座標系）を返す
+    // レイヤーの使えるマスク（反転していないもの）を列挙し、それぞれのバウンディング
+    // ボックス（レイヤーローカル座標系）を返す。
+    // ※ オートトレースが作るマスクは、既定でモードが「なし」のまま作成される
+    //   （画像全体をいきなり隠さないための仕様）。そのため、モードが「なし」でも
+    //   形状データとしては有効なものとして扱う（除外しない）。
     // 戻り値: [{ maskIndex, rect }, ...]（maskIndexは1始まり、ADBE Mask Parade内の順序）
     function getLayerMaskRects(layer, time) {
         var results = [];
@@ -191,7 +194,6 @@
         for (var i = 1; i <= maskGroup.numProperties; i++) {
             try {
                 var m = maskGroup.property(i);
-                if (m.maskMode === MaskMode.NONE) continue;
                 if (m.inverted) continue;
 
                 var shapeProp = m.property("ADBE Mask Shape");
@@ -205,7 +207,8 @@
         return results;
     }
 
-    // newLayer上のマスクのうち、keepIndexesに含まれないものを無効化する
+    // newLayer上のマスクのうち、keepIndexesに含まれるものだけを実際にクロップに使う
+    // （モードを「加算」にして有効化）。それ以外は「なし」にして無効化する。
     // （コピー元と同じ並び・数のマスクが複製されている前提）
     function disableMasksExcept(newLayer, keepIndexes) {
         var keepSet = {};
@@ -216,8 +219,9 @@
         if (!maskGroup) return;
 
         for (var i = 1; i <= maskGroup.numProperties; i++) {
-            if (keepSet[i]) continue;
-            try { maskGroup.property(i).maskMode = MaskMode.NONE; } catch (eD) {}
+            try {
+                maskGroup.property(i).maskMode = keepSet[i] ? MaskMode.ADD : MaskMode.NONE;
+            } catch (eD) {}
         }
     }
 

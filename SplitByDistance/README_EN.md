@@ -113,10 +113,12 @@ end up in the same group even if A and C are far apart.
 
 ### Mask mode
 
-For each valid mask on the selected layer (not inverted, mode other than
-None), the script computes a bounding box from that mask's path vertices. In
-the destination comp, every other mask on the copied layer is disabled, so
-the result is clipped exactly to that mask's shape.
+For each non-inverted mask on the selected layer, the script computes a
+bounding box from that mask's path vertices (masks freshly created by
+Auto-trace default to mode "None" — that's expected, and their shape is still
+used). In the destination comp, the relevant mask's mode is set to "Add" to
+activate it, and every other mask on the copied layer is set to "None" to
+disable it, so the result is clipped exactly to that mask's shape.
 
 ### Pixel mode
 
@@ -206,7 +208,8 @@ reveal these (the defaults are fine for most cases):
 - The bounding box is computed from mask path **vertices only**. If a mask's
   bezier handles bulge noticeably beyond its vertices, that extra area isn't
   accounted for (rarely an issue with typical Auto-trace output).
-- Inverted masks, and masks with mode set to "None", are ignored.
+- Inverted masks are ignored (masks with mode "None" are the normal state
+  right after Auto-trace, so they are *not* ignored — their shape is used).
 
 ### Pixel mode limitations (experimental)
 

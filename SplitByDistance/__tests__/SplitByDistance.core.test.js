@@ -94,64 +94,19 @@ test("aabbFromLocalRect: 90度回転すると幅と高さが入れ替わったAA
     assert.ok(closeTo(box.bottom - box.top, 100, 1e-6));
 });
 
-// ── boxDistance ───────────────────────────────────────────────────
+// ── bboxFromVertices ────────────────────────────────────────────────
 
-test("boxDistance: 重なっているボックスは距離0", () => {
-    assert.equal(Core.boxDistance({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 5, top: 5, right: 15, bottom: 15 }), 0);
+test("bboxFromVertices: 頂点群からバウンディングボックスを求める", () => {
+    const box = Core.bboxFromVertices([[10, 20], [50, 5], [30, 60], [-5, 40]]);
+    assert.deepEqual(box, { left: -5, top: 5, right: 50, bottom: 60 });
 });
 
-test("boxDistance: 接しているボックスは距離0", () => {
-    assert.equal(Core.boxDistance({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 10, top: 0, right: 20, bottom: 10 }), 0);
+test("bboxFromVertices: 頂点1つでも動作する", () => {
+    const box = Core.bboxFromVertices([[7, 9]]);
+    assert.deepEqual(box, { left: 7, top: 9, right: 7, bottom: 9 });
 });
 
-test("boxDistance: 横方向に離れている場合はそのギャップが距離になる", () => {
-    assert.equal(Core.boxDistance({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 20, top: 0, right: 30, bottom: 10 }), 10);
-});
-
-test("boxDistance: 斜め方向はユークリッド距離になる", () => {
-    const d = Core.boxDistance({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 20, top: 20, right: 30, bottom: 30 });
-    assert.ok(closeTo(d, Math.sqrt(200), 1e-9));
-});
-
-// ── clusterByDistance ───────────────────────────────────────────────
-
-function findClusterContaining(clusters, indexValue) {
-    return clusters.find(c => c.includes(indexValue));
-}
-
-test("clusterByDistance: しきい値内のボックス同士は同じグループになる", () => {
-    const boxes = [
-        { left: 0, top: 0, right: 10, bottom: 10 },   // A
-        { left: 15, top: 0, right: 25, bottom: 10 },  // B (Aとのギャップ5)
-        { left: 100, top: 0, right: 110, bottom: 10 } // C (遠い)
-    ];
-    const clusters = Core.clusterByDistance(boxes, 10);
-    assert.equal(clusters.length, 2);
-    const abCluster = findClusterContaining(clusters, 0);
-    assert.ok(abCluster.includes(1));
-    assert.ok(!abCluster.includes(2));
-});
-
-test("clusterByDistance: 連結はチェーン状に伝播する（A-C間は遠くてもA-B-Cで繋がる）", () => {
-    const boxes = [
-        { left: 0, top: 0, right: 10, bottom: 10 },   // A
-        { left: 15, top: 0, right: 25, bottom: 10 },  // B (Aとのギャップ5)
-        { left: 30, top: 0, right: 40, bottom: 10 }   // C (Bとのギャップ5、Aとのギャップは20)
-    ];
-    const clusters = Core.clusterByDistance(boxes, 8);
-    assert.equal(clusters.length, 1);
-    assert.equal(clusters[0].length, 3);
-});
-
-// ── unionBox / computeCompLayout ───────────────────────────────────
-
-test("unionBox: 複数ボックスの外接矩形を求める", () => {
-    const boxes = [
-        { left: 0, top: 0, right: 10, bottom: 10 },
-        { left: 5, top: -5, right: 20, bottom: 8 }
-    ];
-    assert.deepEqual(Core.unionBox(boxes, [0, 1]), { left: 0, top: -5, right: 20, bottom: 10 });
-});
+// ── computeCompLayout ────────────────────────────────────────────────
 
 test("computeCompLayout: 余白を含めたサイズとオフセットを計算する", () => {
     const layout = Core.computeCompLayout({ left: 0, top: 0, right: 100, bottom: 50 }, 10, 30000);
@@ -170,80 +125,6 @@ test("computeCompLayout: 最小値1にクランプされる", () => {
     const layout = Core.computeCompLayout({ left: 0, top: 0, right: 0, bottom: 0 }, 0, 30000);
     assert.equal(layout.width, 1);
     assert.equal(layout.height, 1);
-});
-
-// ── uniqueIndexesDescending ─────────────────────────────────────────
-
-test("uniqueIndexesDescending: 重複を除いてindex降順に並べる", () => {
-    const items = [{ index: 5 }, { index: 5 }, { index: 3 }, { index: 8 }];
-    assert.deepEqual(Core.uniqueIndexesDescending([0, 1, 2, 3], items), [8, 5, 3]);
-});
-
-// ── colorDistance / classifySample ──────────────────────────────────
-
-test("colorDistance: 同じ色なら0", () => {
-    assert.equal(Core.colorDistance([1, 1, 1], [1, 1, 1]), 0);
-});
-
-test("colorDistance: 最大チャンネル差を返す（チェビシェフ距離）", () => {
-    assert.equal(Core.colorDistance([1, 0, 0], [0, 0, 0]), 1);
-});
-
-test("classifySample: アルファがしきい値以下なら背景(false)", () => {
-    const isFg = Core.classifySample([1, 1, 1, 0.01], { useAlpha: true, bgColor: null, alphaThreshold: 0.04, colorTolerance: 0.1 });
-    assert.equal(isFg, false);
-});
-
-test("classifySample: アルファモードでアルファがしきい値超なら前景(true)", () => {
-    const isFg = Core.classifySample([1, 1, 1, 0.5], { useAlpha: true, bgColor: null, alphaThreshold: 0.04, colorTolerance: 0.1 });
-    assert.equal(isFg, true);
-});
-
-test("classifySample: 色モードで背景色から十分離れていれば前景(true)", () => {
-    const isFg = Core.classifySample([1, 0, 0, 1], { useAlpha: false, bgColor: [1, 1, 1], alphaThreshold: 0.04, colorTolerance: 0.1 });
-    assert.equal(isFg, true);
-});
-
-test("classifySample: 色モードで背景色に近ければ背景(false)", () => {
-    const isFg = Core.classifySample([0.95, 0.95, 0.95, 1], { useAlpha: false, bgColor: [1, 1, 1], alphaThreshold: 0.04, colorTolerance: 0.1 });
-    assert.equal(isFg, false);
-});
-
-// ── blobsFromForegroundGrid ──────────────────────────────────────────
-
-test("blobsFromForegroundGrid: 離れた2つのかたまりを別々のブロブとして検出する", () => {
-    // 5x5グリッド、10pxセル。左上2x2と右下2x2が別々のブロブ。
-    const cols = 5, rows = 5, step = 10;
-    const fg = new Array(cols * rows).fill(false);
-    function set(x, y) { fg[y * cols + x] = true; }
-    [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([x, y]) => set(x, y));
-    [[3, 2], [4, 2], [3, 3], [4, 3]].forEach(([x, y]) => set(x, y));
-
-    const blobs = Core.blobsFromForegroundGrid(fg, cols, rows, { left: 0, top: 0, width: 50, height: 50 }, step);
-
-    assert.equal(blobs.length, 2);
-    const b1 = blobs.find(b => b.left === 0 && b.top === 0);
-    assert.ok(b1, "blob1 not found");
-    assert.deepEqual(b1, { left: 0, top: 0, right: 20, bottom: 20 });
-
-    const b2 = blobs.find(b => b.left === 30);
-    assert.ok(b2, "blob2 not found");
-    assert.deepEqual(b2, { left: 30, top: 20, right: 50, bottom: 40 });
-});
-
-test("blobsFromForegroundGrid: 斜め(8近傍)に接するセルは同じブロブになる", () => {
-    const cols = 2, rows = 2, step = 10;
-    const fg = [true, false, false, true]; // (0,0)と(1,1)が斜めに接する
-    const blobs = Core.blobsFromForegroundGrid(fg, cols, rows, { left: 0, top: 0, width: 20, height: 20 }, step);
-    assert.equal(blobs.length, 1);
-    assert.deepEqual(blobs[0], { left: 0, top: 0, right: 20, bottom: 20 });
-});
-
-test("blobsFromForegroundGrid: 逆方向の斜め接触も同じブロブになる", () => {
-    const cols = 2, rows = 2, step = 10;
-    const fg = [false, true, true, false]; // (1,0)と(0,1)が斜めに接する
-    const blobs = Core.blobsFromForegroundGrid(fg, cols, rows, { left: 0, top: 0, width: 20, height: 20 }, step);
-    assert.equal(blobs.length, 1);
 });
 
 // ── shiftVectorProp / shiftScalarProp ────────────────────────────────

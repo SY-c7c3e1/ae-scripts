@@ -2,20 +2,20 @@
 // グループ→レイヤー分割ツール
 //
 // 概要：
-//   1つのレイヤーの中に入っているグループを、グループ1個につき1レイヤーへ
-//   分割する（Illustrator標準の「レイヤーに分配」はレイヤー内の全オブジェクトが
-//   対象になるが、このスクリプトは「グループだけ」を対象にする）。
+//   1つのレイヤーの直下にあるオブジェクト（グループ・複合パス・単体パス・
+//   テキストなど種類を問わず）を、1個につき1レイヤーへ分割する
+//   （Illustrator標準の「レイヤーに分配」とほぼ同じ対象範囲だが、こちらは
+//   グループ名を新レイヤー名に流用する命名や、選択中のみ処理するオプションを持つ）。
 //
-//   グループ以外のオブジェクト（パス・テキスト等）は元のレイヤーに残る。
-//   新しく作られるレイヤーは元のレイヤーのすぐ上に積まれ、グループ同士の
+//   新しく作られるレイヤーは元のレイヤーのすぐ上に積まれ、オブジェクト同士の
 //   前後関係（重なり順）は分割後も維持される。
 //
 // 使い方：
 //   1. Illustratorでドキュメントを開く
 //   2. スクリプトを実行し、対象レイヤーをドロップダウンから選ぶ
 //      （サブレイヤーも階層表示で選択できる）
-//   3. 必要なら「選択中のグループのみ処理する」をON
-//      （OFFの場合、そのレイヤー直下にある全グループが対象）
+//   3. 必要なら「選択中のオブジェクトのみ処理する」をON
+//      （OFFの場合、そのレイヤー直下にある全オブジェクトが対象）
 //   4. [実行] を押す
 //
 // 名前について：
@@ -78,7 +78,7 @@
     secOpt.alignChildren = ["fill", "top"];
     secOpt.margins = [10, 14, 10, 10];
 
-    var chkSelectedOnly = secOpt.add("checkbox", undefined, "選択中のグループのみ処理する（OFF：全グループ）");
+    var chkSelectedOnly = secOpt.add("checkbox", undefined, "選択中のオブジェクトのみ処理する（OFF：全オブジェクト）");
     var chkRemoveEmpty  = secOpt.add("checkbox", undefined, "処理後に元レイヤーが空なら削除する");
     chkRemoveEmpty.value = true;
 
@@ -95,10 +95,10 @@
             return;
         }
 
-        var sourceGroupItems = targetLayer.groupItems; // このレイヤー直下のグループのみ（入れ子のグループは対象外）
+        var sourceItems = targetLayer.pageItems; // このレイヤー直下のオブジェクト全種類（グループ・複合パス・単体パス・テキストなど）
         var candidates = [];
-        for (var g = 0; g < sourceGroupItems.length; g++) {
-            var item = sourceGroupItems[g];
+        for (var g = 0; g < sourceItems.length; g++) {
+            var item = sourceItems[g];
             if (chkSelectedOnly.value && !item.selected) {
                 continue;
             }
@@ -107,8 +107,8 @@
 
         if (candidates.length === 0) {
             alert(chkSelectedOnly.value
-                ? "選択されているグループがありません。"
-                : "このレイヤーにグループが見つかりません。");
+                ? "選択されているオブジェクトがありません。"
+                : "このレイヤーにオブジェクトが見つかりません。");
             return;
         }
 
@@ -133,7 +133,7 @@
             targetLayer.remove();
         }
 
-        alert(candidates.length + " 個のグループを、それぞれ新しいレイヤーに分けました。");
+        alert(candidates.length + " 個のオブジェクトを、それぞれ新しいレイヤーに分けました。");
         dlg.close();
     };
 

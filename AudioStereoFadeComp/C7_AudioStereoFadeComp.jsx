@@ -7,8 +7,7 @@
 // 実行内容（選択した音源1つにつき）：
 //   ・音源の長さに合わせた新規コンポジションを作成し、音源をレイヤーとして追加
 //   ・そのレイヤーに「ステレオミキサー」エフェクトを適用
-//   ・Left Level を 100%→0%、Right Pan を 100%→0% にキーフレームでフェード
-//     （0秒地点で100%、レイヤー末尾で0%の2点のみ）
+//   ・Left Level と Right Pan を 0% に設定（キーフレームは打たない、静的な値のみ）
 //
 // AEの表示言語（英語版/日本語版）に関わらず動作するように、
 // エフェクトは表示名ではなくmatchName（"ADBE Aud Stereo Mixer"）で追加している。
@@ -65,11 +64,8 @@
             var leftLevel   = stereoMixer.property(LEFT_LEVEL_MATCH_NAME);
             var rightPan    = stereoMixer.property(RIGHT_PAN_MATCH_NAME);
 
-            var keyframes = AudioStereoFadeCompCore.buildFadeKeyframes(params.duration);
-            for (var k = 0; k < keyframes.length; k++) {
-                leftLevel.setValueAtTime(keyframes[k].time, keyframes[k].value);
-                rightPan.setValueAtTime(keyframes[k].time, keyframes[k].value);
-            }
+            leftLevel.setValue(AudioStereoFadeCompCore.TARGET_PERCENT);
+            rightPan.setValue(AudioStereoFadeCompCore.TARGET_PERCENT);
 
             createdNames.push(comp.name);
         }
@@ -86,7 +82,7 @@
         createdNames.length + " 個のコンポジションを作成しました。\n" +
         "・" + createdNames.join("\n・") + "\n\n" +
         "各コンポの音源レイヤーに Stereo Mixer を適用し、\n" +
-        "Left Level / Right Pan を 100%→0% でフェードしました。"
+        "Left Level / Right Pan を 0% に設定しました。"
     );
 
 })();

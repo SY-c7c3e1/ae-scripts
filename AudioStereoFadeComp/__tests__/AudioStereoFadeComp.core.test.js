@@ -47,13 +47,3 @@ test("buildCompParams: overridesで値を上書きできる", () => {
     assert.equal(params.frameRate, 59.94);
     assert.equal(params.pixelAspect, Core.DEFAULT_COMP_PIXEL_ASPECT);
 });
-
-// ── buildFadeKeyframes ───────────────────────────────────────
-
-test("buildFadeKeyframes: 0秒で100%、末尾で0%の2点を返す", () => {
-    const keyframes = Core.buildFadeKeyframes(5);
-    assert.deepEqual(keyframes, [
-        { time: 0, value: 100 },
-        { time: 5, value: 0 }
-    ]);
-});

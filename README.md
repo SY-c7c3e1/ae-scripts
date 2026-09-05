@@ -28,7 +28,7 @@ A collection of free After Effects scripts for motion design and live concert vi
 | [InsertRenderToSameNameComp](./InsertRenderToSameNameComp/) | Insert rendered footage into same-named comps (ignoring extension) and solo the inserted layer |
 | [BPMMaker](./BPMMaker/) | Place beat markers or null keyframes at a given BPM |
 | [FileViewer](./FileViewer/) | View text extracted from Word/PDF/Excel files inside After Effects |
-| [AudioStereoFadeComp](./AudioStereoFadeComp/) | Create a comp from selected audio, apply the Stereo Mixer effect, and fade Left Level / Right Pan from 100% to 0% |
+| [AudioStereoFadeComp](./AudioStereoFadeComp/) | Create a comp from selected audio, apply the Stereo Mixer effect, and set Left Level / Right Pan to 0% |
 
 ## Illustrator Scripts
 

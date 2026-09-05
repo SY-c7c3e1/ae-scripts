@@ -14,9 +14,8 @@
     var DEFAULT_COMP_PIXEL_ASPECT = 1;
     var DEFAULT_COMP_FRAME_RATE   = 30;
 
-    // Left Level / Right Pan のフェード幅（100%→0%）
-    var FADE_START_PERCENT = 100;
-    var FADE_END_PERCENT   = 0;
+    // Left Level / Right Pan に設定する値（キーフレームなしの静的値）
+    var TARGET_PERCENT = 0;
 
     // 選択アイテムから「音声のみ」のフッテージだけを抽出する。
     // 動画+音声のファイルは対象外（hasVideoがtrueのものは除外）。
@@ -45,25 +44,14 @@
         };
     }
 
-    // Stereo MixerのLeft Level / Right Panに設定するキーフレーム列を組み立てる。
-    // レイヤー先頭(0秒)で100%、レイヤー末尾(duration秒)で0%になるよう2点のみ返す。
-    function buildFadeKeyframes(duration) {
-        return [
-            { time: 0,        value: FADE_START_PERCENT },
-            { time: duration, value: FADE_END_PERCENT }
-        ];
-    }
-
     var ns = {
         DEFAULT_COMP_WIDTH:        DEFAULT_COMP_WIDTH,
         DEFAULT_COMP_HEIGHT:       DEFAULT_COMP_HEIGHT,
         DEFAULT_COMP_PIXEL_ASPECT: DEFAULT_COMP_PIXEL_ASPECT,
         DEFAULT_COMP_FRAME_RATE:   DEFAULT_COMP_FRAME_RATE,
-        FADE_START_PERCENT:        FADE_START_PERCENT,
-        FADE_END_PERCENT:          FADE_END_PERCENT,
+        TARGET_PERCENT:            TARGET_PERCENT,
         filterAudioOnlyItems:      filterAudioOnlyItems,
-        buildCompParams:           buildCompParams,
-        buildFadeKeyframes:        buildFadeKeyframes
+        buildCompParams:           buildCompParams
     };
 
     if (typeof module !== "undefined" && module.exports) {

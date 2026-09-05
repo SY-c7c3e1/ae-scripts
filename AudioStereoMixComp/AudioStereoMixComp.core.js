@@ -1,8 +1,8 @@
-// AudioStereoFadeComp.core.js
-// AudioStereoFadeComp のロジック本体（UI非依存）。
+// AudioStereoMixComp.core.js
+// AudioStereoMixComp のロジック本体（UI非依存）。
 //
-// ExtendScript側（C7_AudioStereoFadeComp.jsx）からは #include で読み込み、
-// テスト側（__tests__/AudioStereoFadeComp.core.test.js）からは Node の require() で読み込む。
+// ExtendScript側（C7_AudioStereoMixComp.jsx）からは #include で読み込み、
+// テスト側（__tests__/AudioStereoMixComp.core.test.js）からは Node の require() で読み込む。
 // そのためAEの実オブジェクト（AVItem, CompItem等）には一切依存せず、
 // 必要な値はすべて引数で受け取る（オブジェクトは{hasAudio, hasVideo, duration, name, ...}の形で十分）。
 
@@ -57,7 +57,7 @@
     if (typeof module !== "undefined" && module.exports) {
         module.exports = ns;          // Node（テストから require）
     } else {
-        global.AudioStereoFadeCompCore = ns;   // ExtendScript（#include後、グローバルに生える）
+        global.AudioStereoMixCompCore = ns;   // ExtendScript（#include後、グローバルに生える）
     }
 
 })(this);

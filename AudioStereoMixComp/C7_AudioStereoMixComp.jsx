@@ -1,4 +1,4 @@
-// C7_AudioStereoFadeComp.jsx
+// C7_AudioStereoMixComp.jsx
 //
 // 使い方：
 //   1. プロジェクトパネルで音源（音声ファイルのフッテージ）を1つ以上選択
@@ -14,9 +14,9 @@
 // エフェクト内の各パラメータも、表示名は言語によって変わるため、
 // パラメータ自身のmatchName（実機で確認済み）でアクセスする。
 //
-// ロジック本体は AudioStereoFadeComp.core.js に分離している（Node上でのテスト対象はそちら）。
+// ロジック本体は AudioStereoMixComp.core.js に分離している（Node上でのテスト対象はそちら）。
 
-#include "AudioStereoFadeComp.core.js"
+#include "AudioStereoMixComp.core.js"
 
 (function () {
 
@@ -30,20 +30,20 @@
         return;
     }
 
-    var audioItems = AudioStereoFadeCompCore.filterAudioOnlyItems(selectedItems);
+    var audioItems = AudioStereoMixCompCore.filterAudioOnlyItems(selectedItems);
     if (audioItems.length === 0) {
         alert("選択中のアイテムに音声ファイルが見つかりませんでした。\n（映像入りのファイルは対象外です）");
         return;
     }
 
-    app.beginUndoGroup("Audio to Comp + Stereo Mixer Fade");
+    app.beginUndoGroup("Audio to Comp + Stereo Mixer");
 
     var createdNames = [];
 
     try {
         for (var i = 0; i < audioItems.length; i++) {
             var audioItem = audioItems[i];
-            var params = AudioStereoFadeCompCore.buildCompParams(audioItem);
+            var params = AudioStereoMixCompCore.buildCompParams(audioItem);
 
             var comp = app.project.items.addComp(
                 params.name,
@@ -64,8 +64,8 @@
             var leftLevel   = stereoMixer.property(LEFT_LEVEL_MATCH_NAME);
             var rightPan    = stereoMixer.property(RIGHT_PAN_MATCH_NAME);
 
-            leftLevel.setValue(AudioStereoFadeCompCore.TARGET_PERCENT);
-            rightPan.setValue(AudioStereoFadeCompCore.TARGET_PERCENT);
+            leftLevel.setValue(AudioStereoMixCompCore.TARGET_PERCENT);
+            rightPan.setValue(AudioStereoMixCompCore.TARGET_PERCENT);
 
             createdNames.push(comp.name);
         }

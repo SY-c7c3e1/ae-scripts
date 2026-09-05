@@ -11,12 +11,9 @@
 //     （0秒地点で100%、レイヤー末尾で0%の2点のみ）
 //
 // AEの表示言語（英語版/日本語版）に関わらず動作するように、
-// エフェクトは表示名ではなくmatchName（"ADBE Stereo Mixer"）で追加している。
-// エフェクト内の各パラメータの表示名も言語によって変わるため、
-// 名前ではなく並び順（インデックス）でアクセスする：
-//   1 = Left Level, 2 = Left Pan, 3 = Right Level, 4 = Right Pan
-// （インデックスはエフェクトのバージョンが変わらない限りAEの表示言語や
-//   バージョンに依存せず一定なので、日本語版/英語版どちらでも同じ結果になる）
+// エフェクトは表示名ではなくmatchName（"ADBE Aud Stereo Mixer"）で追加している。
+// エフェクト内の各パラメータも、表示名は言語によって変わるため、
+// パラメータ自身のmatchName（実機で確認済み）でアクセスする。
 //
 // ロジック本体は AudioStereoFadeComp.core.js に分離している（Node上でのテスト対象はそちら）。
 
@@ -24,9 +21,9 @@
 
 (function () {
 
-    var STEREO_MIXER_MATCH_NAME = "ADBE Stereo Mixer";
-    var LEFT_LEVEL_INDEX = 1;
-    var RIGHT_PAN_INDEX  = 4;
+    var STEREO_MIXER_MATCH_NAME    = "ADBE Aud Stereo Mixer";
+    var LEFT_LEVEL_MATCH_NAME      = "ADBE Aud Stereo Mixer-0001";
+    var RIGHT_PAN_MATCH_NAME       = "ADBE Aud Stereo Mixer-0004";
 
     var selectedItems = app.project.selection;
     if (!selectedItems || selectedItems.length === 0) {
@@ -65,8 +62,8 @@
             var layer = comp.layers.add(audioItem);
 
             var stereoMixer = layer.property("ADBE Effect Parade").addProperty(STEREO_MIXER_MATCH_NAME);
-            var leftLevel   = stereoMixer.property(LEFT_LEVEL_INDEX);
-            var rightPan    = stereoMixer.property(RIGHT_PAN_INDEX);
+            var leftLevel   = stereoMixer.property(LEFT_LEVEL_MATCH_NAME);
+            var rightPan    = stereoMixer.property(RIGHT_PAN_MATCH_NAME);
 
             var keyframes = AudioStereoFadeCompCore.buildFadeKeyframes(params.duration);
             for (var k = 0; k < keyframes.length; k++) {

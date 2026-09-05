@@ -1,10 +1,10 @@
-// AudioStereoFadeComp.core.test.js
-// AudioStereoFadeComp.core.js のロジックを、AE本体を起動せずに検証するテスト。
+// AudioStereoMixComp.core.test.js
+// AudioStereoMixComp.core.js のロジックを、AE本体を起動せずに検証するテスト。
 // 実行: npm test （リポジトリ直下） または node --test このファイル
 
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const Core = require("../AudioStereoFadeComp.core.js");
+const Core = require("../AudioStereoMixComp.core.js");
 
 // ── filterAudioOnlyItems ────────────────────────────────────
 

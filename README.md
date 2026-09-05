@@ -14,6 +14,7 @@ A collection of free After Effects scripts for motion design and live concert vi
 | Script | Description |
 |---|---|
 | [Renamer](./Renamer/) | Batch rename selected layers or Project panel items: strip/prepend/append text and find & replace |
+| [CompSettingsChanger](./CompSettingsChanger/) | Batch-edit selected comps' width/height (with aspect-ratio lock), framerate (with Drop/Non-Drop Frame presets), and duration |
 | [MarkerCopy](./MarkerCopy/) | Copy & paste markers between layers and compositions |
 | [SplitByDistance](./SplitByDistance/) | Auto-trace a single image and split each detected object into its own composition |
 | [ExpressionToMatchName](./ExpressionToMatchName/) | Convert expressions that reference effects/parameters by display name into language-independent matchName references (plus a revert tool) |
@@ -28,11 +29,20 @@ A collection of free After Effects scripts for motion design and live concert vi
 | [BPMMaker](./BPMMaker/) | Place beat markers or null keyframes at a given BPM |
 | [FileViewer](./FileViewer/) | View text extracted from Word/PDF/Excel files inside After Effects |
 
+## Illustrator Scripts
+
+After Effects向けが中心のリポジトリだが、Illustrator用の小さなユーティリティ
+スクリプトもここに置いている。
+
+| Script | Description |
+|---|---|
+| [GroupsToLayers](./Illustrator/GroupsToLayers/) | Split each group inside a layer out into its own layer |
+
 ## Expressions（エクスプレッション置き場）
 
 完成した「スクリプト」ではなく、レイヤーのプロパティに直接貼り付けて使う
-**エクスプレッションのコード片**を集める場所。
-[`Expressions/`](./Expressions/) を参照。
+**エクスプレッションのコード片**は、別リポジトリ
+[ae-expressions](https://github.com/SY-c7c3e1/ae-expressions) にまとめてある。
 
 ## Installation
 

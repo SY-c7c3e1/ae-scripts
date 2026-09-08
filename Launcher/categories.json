@@ -5,6 +5,7 @@
     "CueCutter",
     "GridChartMaker",
     "AutoCropComposition",
+    "CompSettingsChanger",
     "LoopComp",
     "LoopPrecomp",
     "RandomizeLayerStart",
@@ -12,6 +13,7 @@
     "MarkerCopy",
     "ExpressionToMatchName",
     "InsertRenderToSameNameComp",
+    "Renamer",
     "FileViewer"
   ],
   "categories": {
@@ -20,6 +22,7 @@
     "CueCutter": "01comp_layer",
     "GridChartMaker": "01comp_layer",
     "AutoCropComposition": "02comp_set",
+    "CompSettingsChanger": "02comp_set",
     "LoopComp": "02comp_set",
     "LoopPrecomp": "02comp_set",
     "RandomizeLayerStart": "03layer_animation",
@@ -33,6 +36,7 @@
     "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expression → MatchName 変換",
     "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "元のExpressionに戻す",
     "AutoCropComposition/AutoCropComposition.jsx": "コンポを自動クロップ",
+    "CompSettingsChanger/C7_CompSettingsChanger.jsx": "コンポ設定を一括変更（幅/高さ/フレームレート/長さ）",
     "CropLayersToCompSize/CropLayersToCompSize.jsx": "レイヤーを個別プリコンプ化",
     "LoopComp/LoopComp.jsx": "ループ複製コンポを作成（複製方式）",
     "LoopPrecomp/LoopPrecomp.jsx": "ループ用プリコンプ作成（分割方式）",
@@ -40,6 +44,7 @@
     "CueCutter/CueCutter.jsx": "♪マーカーでコンポ分割（Cue Cutter）",
     "InsertRenderToSameNameComp/InsertRenderToSameNameComp.jsx": "同名コンポへレンダリング差し替え＋Solo",
     "BPMMaker/BPMMaker.jsx": "BPM目印生成（マーカー/ヌルキーフレーム）",
+    "Renamer/Renamer.jsx": "レイヤー/アイテム名を一括リネーム",
     "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー"
   }
 }

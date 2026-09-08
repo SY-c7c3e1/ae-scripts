@@ -16,8 +16,9 @@
 // 判定方法：
 //   オートトレース実行前後のマスク数を比較し、新しく追加されたマスクだけを対象にする
 //   （元々あったマスクには影響しない）。各マスクのパス頂点からバウンディングボックスを
-//   求め、そのマスクだけを有効化した状態でレイヤーをコピーする（矩形クロップではなく、
-//   マスク形状どおりのクロップになる）。
+//   求め、レイヤーをコピーしたうえで対象のマスク以外はすべて削除する（無効化ではなく
+//   削除）。これにより、矩形クロップではなくマスク形状どおりのクロップになり、
+//   かつコピー先のレイヤーが余分なマスクを持ち歩かないため軽量になる。
 //
 // 制限事項：
 //   ・判定は現在の再生ヘッド位置（comp.time）で行う
@@ -170,17 +171,23 @@
         return results;
     }
 
-    // newLayer上のマスクのうち、keepIndexに一致するものだけを実際にクロップに使う
-    // （モードを「加算」にして有効化）。それ以外は「なし」にして無効化する。
-    function useOnlyMask(newLayer, keepIndex) {
+    // newLayer上のマスクのうち、keepIndexに一致するもの以外をすべて削除し、
+    // 残った1つを「加算」モードで有効化する（他の59個のマスクを持ち歩かせない
+    // ことで、コピー先コンポの負荷を減らす）。
+    // ※ インデックスの大きい方から削除することで、削除のたびに残りのマスクの
+    //   番号がズレても keepIndex の対象を取り違えないようにしている。
+    function keepOnlyMask(newLayer, keepIndex) {
         var maskGroup;
         try { maskGroup = newLayer.property("ADBE Mask Parade"); } catch (e) { return; }
         if (!maskGroup) return;
 
-        for (var i = 1; i <= maskGroup.numProperties; i++) {
-            try {
-                maskGroup.property(i).maskMode = (i === keepIndex) ? MaskMode.ADD : MaskMode.NONE;
-            } catch (eD) {}
+        for (var i = maskGroup.numProperties; i >= 1; i--) {
+            if (i === keepIndex) continue;
+            try { maskGroup.property(i).remove(); } catch (eD) {}
+        }
+
+        if (maskGroup.numProperties >= 1) {
+            try { maskGroup.property(1).maskMode = MaskMode.ADD; } catch (eA) {}
         }
     }
 
@@ -353,7 +360,7 @@
 
                 srcLayer.copyToComp(newComp);
                 var newLayer = newComp.layer(1);
-                useOnlyMask(newLayer, item.maskIndex);
+                keepOnlyMask(newLayer, item.maskIndex);
 
                 var hasParent = false;
                 try { hasParent = !!newLayer.parent; } catch (eP) { hasParent = false; }

@@ -48,9 +48,11 @@ already existed on the layer are left untouched).
 
 For each new mask, a bounding box is computed from its path vertices (in the
 layer's local coordinate space). In the destination comp, that one mask is
-set to mode "Add" (activated) and every other mask on the copy is set to
-"None" (disabled) — so the result is clipped exactly to that mask's shape,
-not a rectangular crop.
+every other mask is *removed* (not just disabled) from the copied layer, and
+the one remaining mask is set to mode "Add" — so the result is clipped
+exactly to that mask's shape, not a rectangular crop. Removing the unused
+masks also keeps each output comp's layer lightweight even when the source
+image had dozens of detected objects.
 
 Bounding boxes are measured at the **current playhead position** at the
 moment you click Run. If your layers are animated, move the playhead to the

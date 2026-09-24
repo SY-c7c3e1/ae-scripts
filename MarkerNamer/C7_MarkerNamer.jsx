@@ -15,7 +15,12 @@
 (function (thisObj) {
 
     // ── 設定 ────────────────────────────────────────────────────
-    var PRESETS  = ["intro", "1A", "1B", "1C", "1D", "outro", "atk"];
+    var PRESETS  = [
+        "intro", "1A", "1B", "1C",
+        "2A", "2B", "2C", "D",
+        "3C", "Theme", "Kanso", "outro",
+        "atk"
+    ];
     var OPTS     = {
         noNumber: ["atk"],   // 番号を付けない名前
         digits:   2          // 連番の桁数（2 → 01_）

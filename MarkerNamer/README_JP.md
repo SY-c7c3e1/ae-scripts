@@ -53,7 +53,7 @@ C:\Program Files\Adobe\Adobe After Effects <バージョン>\Support Files\Scrip
 `C7_MarkerNamer.jsx` の先頭で変更できます。
 
 ```js
-var PRESETS  = ["intro", "1A", "1B", "1C", "1D", "outro", "atk"]; // ボタン
+var PRESETS  = ["intro", "1A", "1B", "1C", "2A", "2B", "2C", "D", "3C", "Theme", "Kanso", "outro", "atk"]; // ボタン
 var OPTS     = {
     noNumber: ["atk"],   // 番号を付けない名前（"break" などを追加可）
     digits:   2          // 連番の桁数

@@ -53,7 +53,7 @@ Each click names the current marker and moves the playhead to the next one.
 Edit the top of `C7_MarkerNamer.jsx`:
 
 ```js
-var PRESETS  = ["intro", "1A", "1B", "1C", "1D", "outro", "atk"]; // buttons
+var PRESETS  = ["intro", "1A", "1B", "1C", "2A", "2B", "2C", "D", "3C", "Theme", "Kanso", "outro", "atk"]; // buttons
 var OPTS     = {
     noNumber: ["atk"],   // names without numbers (e.g. add "break")
     digits:   2          // digits of the number prefix

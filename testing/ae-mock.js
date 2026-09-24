@@ -31,6 +31,7 @@ function createMockMarkerProperty(initial) {
         get numKeys() { return keys.length; },
         keyTime: function (k) { return keys[k - 1].time; },
         keyValue: function (k) { return keys[k - 1].value; },
+        setValueAtKey: function (k, value) { keys[k - 1].value = value; },
         removeKey: function (k) { keys.splice(k - 1, 1); },
         setValueAtTime: function (time, value) {
             keys.push({ time: time, value: value });

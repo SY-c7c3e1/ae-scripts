@@ -11,6 +11,7 @@
     "RandomizeLayerStart",
     "BPMMaker",
     "MarkerCopy",
+    "MarkerNamer",
     "ExpressionToMatchName",
     "InsertRenderToSameNameComp",
     "Renamer",
@@ -28,6 +29,7 @@
     "RandomizeLayerStart": "03layer_animation",
     "BPMMaker": "03layer_animation",
     "MarkerCopy": "03layer_animation",
+    "MarkerNamer": "03layer_animation",
     "ExpressionToMatchName": "05Expression",
     "InsertRenderToSameNameComp": "06Export_data",
     "FileViewer": "08Viewer"
@@ -44,6 +46,7 @@
     "CueCutter/CueCutter.jsx": "♪マーカーでコンポ分割（Cue Cutter）",
     "InsertRenderToSameNameComp/InsertRenderToSameNameComp.jsx": "同名コンポへレンダリング差し替え＋Solo",
     "BPMMaker/BPMMaker.jsx": "BPM目印生成（マーカー/ヌルキーフレーム）",
+    "MarkerNamer/C7_MarkerNamer.jsx": "マーカーにボタンで名前付け（連番自動）",
     "Renamer/Renamer.jsx": "レイヤー/アイテム名を一括リネーム",
     "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー"
   }

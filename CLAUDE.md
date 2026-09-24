@@ -15,6 +15,7 @@ After Effects用のスクリプト・パネル・（将来的な）拡張機能�
   ないので、そのつもりで。
 - MarkerCopy / SplitByDistance / ExpressionToMatchName は元からリポジトリに
   あったスクリプトで、Claudeが作成したものではない（接頭辞なし）。
+  MarkerCopy は現在 `MarkerNamer/` に統合済み（`MarkerCopy.core.js` はそのまま残している）。
 - 対象は「AE上で実行するツールスクリプト（.jsx）」。`*.core.js`（ロジック
   本体）や `testing/`, `Launcher/` 配下の基盤コードには付けない。
 

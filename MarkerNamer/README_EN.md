@@ -1,13 +1,13 @@
 # C7_MarkerNamer.jsx (English)
 
-A dockable panel for naming layer markers on an audio layer with one click per marker.
+A dockable panel for naming layer markers on an audio layer with one click per marker, with built-in marker copy & paste (formerly MarkerCopy).
 Built for live-visual cue naming such as `01_intro`, `02_1A`, `03_1B` ...
 
 ---
 
 ## Installation
 
-Place **both** `C7_MarkerNamer.jsx` and `MarkerNamer.core.js` in the following folder and restart After Effects:
+Place **all three** files — `C7_MarkerNamer.jsx`, `MarkerNamer.core.js` and `MarkerCopy.core.js` — in the following folder and restart After Effects:
 
 ```
 C:\Program Files\Adobe\Adobe After Effects <version>\Support Files\Scripts\ScriptUI Panels\
@@ -15,7 +15,7 @@ C:\Program Files\Adobe\Adobe After Effects <version>\Support Files\Scripts\Scrip
 
 Open it from **Window → C7_MarkerNamer.jsx** (dockable).
 
-> The panel fails to load if `MarkerNamer.core.js` is missing from the same folder.
+> The panel fails to load if either `.core.js` file is missing from the same folder.
 
 ---
 
@@ -45,6 +45,28 @@ Each click names the current marker and moves the playhead to the next one.
 - Unnamed markers are not counted
 - `atk` is applied without a number
 - Inserting or clearing a name renumbers everything after it
+
+---
+
+## Marker Copy (formerly MarkerCopy)
+
+The "マーカーコピー" section at the bottom copies and pastes markers clipboard-style,
+between layer markers and comp markers, or across compositions.
+
+| Action | Layer(s) selected | Nothing selected |
+|---|---|---|
+| **[Copy]** | Markers of the layer(s) (merged when several) | Comp markers |
+| **[Paste]** | To the layer(s) | To comp markers |
+
+The clipboard is kept until the panel is closed.
+
+### Options
+
+- **現在位置にペースト (Paste at playhead)** — shift so the first marker lands on the playhead (OFF: original times)
+- **既存マーカーを保持 (Keep existing)** — append to existing markers (OFF: replace them)
+- **レイヤーのイン点をオフセットに使う (Use layer in-point offset)** — times relative to each layer's start (OFF: absolute comp time)
+
+Copied fields: comment, duration, chapter, URL, frame target, cue point name, label.
 
 ---
 

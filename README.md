@@ -15,8 +15,7 @@ A collection of free After Effects scripts for motion design and live concert vi
 |---|---|
 | [Renamer](./Renamer/) | Batch rename selected layers or Project panel items: strip/prepend/append text and find & replace |
 | [CompSettingsChanger](./CompSettingsChanger/) | Batch-edit selected comps' width/height (with aspect-ratio lock), framerate (with Drop/Non-Drop Frame presets), and duration |
-| [MarkerCopy](./MarkerCopy/) | Copy & paste markers between layers and compositions |
-| [MarkerNamer](./MarkerNamer/) | Name layer markers with one-click buttons (intro / 1A / 1B ...) and auto-numbered prefixes |
+| [MarkerNamer](./MarkerNamer/) | Name layer markers with one-click buttons (intro / 1A / 1B ...) with auto numbering, plus copy & paste markers between layers and compositions (formerly MarkerCopy) |
 | [SplitByDistance](./SplitByDistance/) | Auto-trace a single image and split each detected object into its own composition |
 | [ExpressionToMatchName](./ExpressionToMatchName/) | Convert expressions that reference effects/parameters by display name into language-independent matchName references (plus a revert tool) |
 | [RandomizeLayerStart](./RandomizeLayerStart/) | Randomize the start time of selected layers within the comp |
@@ -93,7 +92,7 @@ npm test
 ```
 
 新しいスクリプトを追加する際は、UI(`.jsx`)とロジック(`.core.js`)を分離しておくと
-`__tests__/` にテストを追加しやすい。`MarkerCopy/` が実例。
+`__tests__/` にテストを追加しやすい。`MarkerNamer/` が実例。
 
 ## License
 

@@ -58,8 +58,8 @@ ScriptUIの`Window`等）に依存するため、そのままではAE外で実�
 })();
 ```
 
-このパターンの実例は [`MarkerCopy/MarkerCopy.core.js`](../MarkerCopy/MarkerCopy.core.js)
-と [`MarkerCopy/MarkerCopy.jsx`](../MarkerCopy/MarkerCopy.jsx) を参照。
+このパターンの実例は [`MarkerNamer/MarkerCopy.core.js`](../MarkerNamer/MarkerCopy.core.js)
+と [`MarkerNamer/C7_MarkerNamer.jsx`](../MarkerNamer/C7_MarkerNamer.jsx) を参照。
 
 ## `ae-mock.js`：AE APIの軽量モック
 

@@ -27,8 +27,13 @@ A collection of free After Effects scripts for motion design and live concert vi
 | [CueCutter](./CueCutter/) | Split precomposed layers into per-marker compositions using a "♪" layer's commented markers |
 | [InsertRenderToSameNameComp](./InsertRenderToSameNameComp/) | Insert rendered footage into same-named comps (ignoring extension) and solo the inserted layer |
 | [BPMMaker](./BPMMaker/) | Place beat markers or null keyframes at a given BPM |
-| [FileViewer](./FileViewer/) | View text extracted from Word/PDF/Excel files inside After Effects |
 | [AudioStereoMixComp](./AudioStereoMixComp/) | Create a comp from selected audio, apply the Stereo Mixer effect, and set Left Level / Right Pan to 0% |
+
+## Extensions (CEP panels)
+
+| Extension | Description |
+|---|---|
+| [ReferenceViewer](./extensions/ReferenceViewer/) | Keep reference images, PDFs, web links and notes per project (saved inside the .aep) and view them in a dockable panel. Replaces the old FileViewer |
 
 ## Illustrator Scripts
 

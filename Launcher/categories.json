@@ -13,8 +13,7 @@
     "MarkerNamer",
     "ExpressionToMatchName",
     "InsertRenderToSameNameComp",
-    "Renamer",
-    "FileViewer"
+    "Renamer"
   ],
   "categories": {
     "SplitByDistance": "01comp_layer",
@@ -29,8 +28,7 @@
     "BPMMaker": "03layer_animation",
     "MarkerNamer": "03layer_animation",
     "ExpressionToMatchName": "05Expression",
-    "InsertRenderToSameNameComp": "06Export_data",
-    "FileViewer": "08Viewer"
+    "InsertRenderToSameNameComp": "06Export_data"
   },
   "labels": {
     "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expression → MatchName 変換",
@@ -45,7 +43,6 @@
     "InsertRenderToSameNameComp/InsertRenderToSameNameComp.jsx": "同名コンポへレンダリング差し替え＋Solo",
     "BPMMaker/BPMMaker.jsx": "BPM目印生成（マーカー/ヌルキーフレーム）",
     "MarkerNamer/C7_MarkerNamer.jsx": "マーカー名付け（連番自動）＋コピー",
-    "Renamer/Renamer.jsx": "レイヤー/アイテム名を一括リネーム",
-    "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー"
+    "Renamer/Renamer.jsx": "レイヤー/アイテム名を一括リネーム"
   }
 }

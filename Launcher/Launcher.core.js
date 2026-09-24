@@ -24,7 +24,9 @@
 
 (function (global) {
 
-    var DEFAULT_EXCLUDE_DIRS = ["testing", "Launcher", "node_modules", ".git"];
+    // extensions/ はCEP拡張機能（パネル）置き場。中の .jsx はパネルから呼ばれる
+    // 部品なので、Launcherから直接実行する対象にはしない。
+    var DEFAULT_EXCLUDE_DIRS = ["testing", "Launcher", "extensions", "node_modules", ".git"];
 
     // 実行可能なスクリプトとして扱う拡張子。.jsxbin はコンパイル済み
     // ExtendScript（ソース非公開で配布されることが多い）で、$.evalFile で

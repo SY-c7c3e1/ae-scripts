@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Reference Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header class="toolbar">
+            <button id="btnAddFile" title="ファイルを追加（パネルへのドラッグ＆ドロップでも追加できます）">＋ファイル</button>
+            <button id="btnAddLink" title="Webリンクを追加">＋リンク</button>
+            <span class="spacer"></span>
+            <span id="projectName" class="project-name" title=""></span>
+        </header>
+
+        <form id="linkForm" class="link-form" hidden>
+            <input id="linkName" type="text" placeholder="タイトル（省略可）">
+            <input id="linkUrl" type="text" placeholder="https://...">
+            <div class="link-form-buttons">
+                <button type="submit" class="primary">追加</button>
+                <button type="button" id="linkCancel">キャンセル</button>
+            </div>
+        </form>
+
+        <div id="restoreBanner" class="banner" hidden>
+            <span>保存されていない変更のバックアップがあります</span>
+            <button id="btnRestore" class="primary">復元</button>
+            <button id="btnRestoreDismiss">無視</button>
+        </div>
+
+        <section class="list-section">
+            <ul id="itemList" class="item-list"></ul>
+            <div id="emptyHint" class="empty-hint">
+                ファイルをここにドラッグ＆ドロップするか、<br>「＋ファイル」「＋リンク」で追加してください
+            </div>
+        </section>
+
+        <section id="viewer" class="viewer">
+            <div class="viewer-placeholder">一覧から選ぶとここに表示されます</div>
+        </section>
+
+        <section id="memoSection" class="memo-section">
+            <div id="memoHeader" class="memo-header">
+                <span id="memoToggle" class="memo-toggle">▼</span> メモ
+                <span id="memoSaved" class="memo-saved"></span>
+            </div>
+            <textarea id="memo" placeholder="名前・歌詞・進行メモなど（プロジェクトごとに保存されます）"></textarea>
+        </section>
+
+        <footer id="status" class="status"></footer>
+    </div>
+
+    <ul id="contextMenu" class="context-menu" hidden></ul>
+    <div id="dropOverlay" class="drop-overlay" hidden>ドロップしてリファレンスに追加</div>
+
+    <script src="ReferenceViewer.core.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

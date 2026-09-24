@@ -18,6 +18,7 @@ const SAMPLE_ITEMS = items([
     "Launcher/AEScriptsLauncher.jsx",
     "Launcher/Launcher.core.js",
     "Launcher/__tests__/Launcher.core.test.js",
+    "extensions/ReferenceViewer/host/ReferenceViewer.host.jsx",
     "MarkerCopy/__tests__/MarkerCopy.core.test.js",
     "README.md",
     ".git/HEAD"
@@ -32,11 +33,12 @@ test("buildScriptList: フォルダ名をデフォルトのカテゴリ名とし
     assert.equal(expr.scripts.length, 2);
 });
 
-test("buildScriptList: testing/Launcher/node_modules/.git 配下と__tests__配下は除外する", () => {
+test("buildScriptList: testing/Launcher/extensions/node_modules/.git 配下と__tests__配下は除外する", () => {
     const groups = LauncherCore.buildScriptList(SAMPLE_ITEMS, {});
     const allRelPaths = groups.flatMap(g => g.scripts.map(s => s.relPath));
     assert.ok(!allRelPaths.some(p => p.indexOf("testing/") === 0));
     assert.ok(!allRelPaths.some(p => p.indexOf("Launcher/") === 0));
+    assert.ok(!allRelPaths.some(p => p.indexOf("extensions/") === 0));
     assert.ok(!allRelPaths.some(p => p.indexOf("__tests__/") !== -1));
     assert.ok(!allRelPaths.some(p => p.indexOf(".git") === 0));
 });

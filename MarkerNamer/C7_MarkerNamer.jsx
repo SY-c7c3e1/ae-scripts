@@ -1,4 +1,4 @@
-// C7_MarkerNamer.jsx  v0.2
+// C7_MarkerNamer.jsx  v0.3
 // マーカーの名前付け＋コピー＆ペーストをまとめたパネル
 //
 // ■ 名前付け
@@ -6,6 +6,8 @@
 //   2. CTIをマーカー上（またはその直後）に置く
 //   3. 名前ボタンを押す → 名前が付いて、CTIが次のマーカーへ移動
 //   ※ 連番（01_ など）は自動で振り直し。OPTS.noNumber の名前は番号なし。
+//   ※ A/B/C ボタンは「何番か」を自動で判断（1A→1B→2A…、2C の次の C は 3C）。
+//     ボタンには、今の位置で押したときに付く名前が表示される。
 //
 // ■ マーカーコピー（旧 MarkerCopy.jsx を統合）
 //   1. コピー元のレイヤー（未選択ならコンポ）で [Copy]
@@ -22,14 +24,15 @@
 
     // ── 設定 ────────────────────────────────────────────────────
     var PRESETS  = [
-        "intro", "1A", "1B", "1C",
-        "2A", "2B", "2C", "D",
-        "3C", "Theme", "Kanso", "outro",
-        "atk"
+        "intro", "A", "B", "C",
+        "D", "E", "Theme", "Kanso",
+        "outro", "atk"
     ];
+    var SECTION_LETTERS = ["A", "B", "C", "D", "E"];  // セクションのボタン
     var OPTS     = {
-        noNumber: ["atk"],   // 番号を付けない名前
-        digits:   2          // 連番の桁数（2 → 01_）
+        noNumber:     ["atk"],          // 連番（01_）を付けない名前
+        digits:       2,                // 連番の桁数（2 → 01_）
+        roundLetters: ["A", "B", "C"]   // 「何番か」を付けるセクション（D・Eはそのまま）
     };
     var ROW_SIZE = 4;        // 1行に並べるボタン数
 
@@ -74,6 +77,20 @@
         updateStatus();
     }
 
+    function isSectionLetter(p) {
+        for (var i = 0; i < SECTION_LETTERS.length; i++) {
+            if (SECTION_LETTERS[i] === p) return true;
+        }
+        return false;
+    }
+
+    // プリセットボタン：A〜E は番号を自動で決めてから付ける
+    function applyPreset(p) {
+        if (!isSectionLetter(p)) { applyName(p, true); return; }
+        var ctx = getCtx(); if (!ctx) return;
+        applyName(Core.resolveSection(ctx.mk, curIdx(ctx), p, OPTS), true);
+    }
+
     function step(dir) {
         var ctx = getCtx(); if (!ctx) return;
         moveTo(ctx, curIdx(ctx) + dir);
@@ -103,6 +120,7 @@
     var pGroup = win.add("panel", undefined, "名前");
     pGroup.alignChildren = ["fill", "top"];
     var row;
+    var sectionButtons = [];   // 表示を切り替えるボタン [{btn, letter}]
     for (var i = 0; i < PRESETS.length; i++) {
         if (i % ROW_SIZE === 0) {
             row = pGroup.add("group");
@@ -111,7 +129,8 @@
         }
         var b = row.add("button", undefined, PRESETS[i]);
         b.preferredSize = [48, 24];
-        b.onClick = (function (n) { return function () { applyName(n, true); }; })(PRESETS[i]);
+        b.onClick = (function (n) { return function () { applyPreset(n); }; })(PRESETS[i]);
+        if (isSectionLetter(PRESETS[i])) sectionButtons.push({ btn: b, letter: PRESETS[i] });
     }
 
     // 自由入力
@@ -247,11 +266,26 @@
 
     function updateStatus() {
         var ctx = getCtx(true);
-        if (!ctx) return;
+        if (!ctx) {
+            for (var j = 0; j < sectionButtons.length; j++) sectionButtons[j].btn.text = sectionButtons[j].letter;
+            return;
+        }
         var idx = curIdx(ctx);
         var name = ctx.mk.keyValue(idx).comment;
         status.text = idx + " / " + ctx.mk.numKeys + " : " + (name === "" ? "（未命名）" : name);
+        // A/B/C ボタンに「今押したら付く名前」を表示
+        for (var i = 0; i < sectionButtons.length; i++) {
+            var sb = sectionButtons[i];
+            sb.btn.text = Core.resolveSection(ctx.mk, idx, sb.letter, OPTS);
+        }
     }
+
+    // タイムラインでCTIを動かした後も、パネルにマウスを乗せれば表示が追いつくようにする
+    try {
+        win.addEventListener("mouseover", function () {
+            try { updateStatus(); } catch (e) {}
+        });
+    } catch (e) {}
 
     win.onResizing = win.onResize = function () { this.layout.resize(); };
     if (win instanceof Window) { win.center(); win.show(); }

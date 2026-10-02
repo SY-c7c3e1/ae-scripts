@@ -23,13 +23,13 @@ Open it from **Window → C7_MarkerNamer.jsx** (dockable).
 
 1. Select the audio layer
 2. Put the playhead on the first marker
-3. Click `intro` → `1A` → `1B` ... in order
+3. Click `intro` → `A` → `B` → `C` → `A` ... following the song structure
 
 Each click names the current marker and moves the playhead to the next one.
 
 | Button | Action |
 |---|---|
-| Name buttons (intro / 1A ... / atk) | Name the current marker, then go to the next |
+| Name buttons (intro / A–E / Theme ... / atk) | Name the current marker, then go to the next |
 | Free text + [付ける] | Apply the typed name, then go to the next |
 | [◀ 前] / [スキップ ▶] | Move to the previous / next marker without naming |
 | [消去] | Clear the current marker's name |
@@ -45,6 +45,22 @@ Each click names the current marker and moves the playhead to the next one.
 - Unnamed markers are not counted
 - `atk` is applied without a number
 - Inserting or clearing a name renumbers everything after it
+
+---
+
+## A–E buttons (automatic verse/chorus round)
+
+A, B and C get the round number automatically. The panel looks at the last name like `2B` **before** the current marker:
+
+- Pressed letter comes later (C after B) → same round (`2C`)
+- Same or earlier letter (A after C, C after C) → next round (`3A`, `3C`)
+- Nothing before → round 1 (`1A`)
+
+Example: A → B → C → A → B → C → D → C gives `1A 1B 1C 2A 2B 2C D 3C`.
+
+- D and E are applied as-is (`D`, `E`)
+- Each button shows the name it would apply at the current position (e.g. `2A`)
+- After moving the playhead in the timeline, hover over the panel to refresh the labels
 
 ---
 
@@ -75,10 +91,12 @@ Copied fields: comment, duration, chapter, URL, frame target, cue point name, la
 Edit the top of `C7_MarkerNamer.jsx`:
 
 ```js
-var PRESETS  = ["intro", "1A", "1B", "1C", "2A", "2B", "2C", "D", "3C", "Theme", "Kanso", "outro", "atk"]; // buttons
+var PRESETS  = ["intro", "A", "B", "C", "D", "E", "Theme", "Kanso", "outro", "atk"]; // buttons
+var SECTION_LETTERS = ["A", "B", "C", "D", "E"];  // section buttons
 var OPTS     = {
-    noNumber: ["atk"],   // names without numbers (e.g. add "break")
-    digits:   2          // digits of the number prefix
+    noNumber:     ["atk"],          // names without the 01_ prefix (e.g. add "break")
+    digits:       2,                // digits of the number prefix
+    roundLetters: ["A", "B", "C"]   // sections that get a round number (D, E stay as-is)
 };
 ```
 

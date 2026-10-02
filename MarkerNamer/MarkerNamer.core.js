@@ -67,7 +67,38 @@
         renumber(mk, opts);
     }
 
+    // セクション（A/B/C…）に「何番か」を自動で付けた名前を返す。
+    // idx番目のマーカーより前にある名前から、最後の「番号+文字」（例 "2B"）を探し、
+    //   押した文字がそれより後ろ（B→C） → 同じ番号（"2C"）
+    //   同じか前（C→A, C→C）           → 次の番号（"3A", "3C"）
+    //   前に無い                         → 1（"1A"）
+    // opts.roundLetters に含まれない文字（D, E など）は番号なしでそのまま返す。
+    function resolveSection(mk, idx, letter, opts) {
+        var round = opts.roundLetters || [];
+        var inRound = false;
+        for (var r = 0; r < round.length; r++) {
+            if (round[r] === letter) { inRound = true; break; }
+        }
+        if (!inRound) return letter;
+
+        var re = /^(\d+)([A-Za-z])$/;
+        for (var i = Math.min(idx, mk.numKeys + 1) - 1; i >= 1; i--) {
+            var m = re.exec(stripNumber(mk.keyValue(i).comment));
+            if (!m) continue;
+            var prevLetter = m[2].toUpperCase();
+            var isRound = false;
+            for (var k = 0; k < round.length; k++) {
+                if (round[k] === prevLetter) { isRound = true; break; }
+            }
+            if (!isRound) continue;
+            var n = parseInt(m[1], 10);
+            return (letter > prevLetter ? n : n + 1) + letter;
+        }
+        return "1" + letter;
+    }
+
     var ns = {
+        resolveSection: resolveSection,
         stripNumber:  stripNumber,
         isNoNumber:   isNoNumber,
         pad:          pad,

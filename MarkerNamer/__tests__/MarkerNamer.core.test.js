@@ -78,3 +78,55 @@ test("renumber: 桁数の設定が効く", () => {
     Core.setName(mk, 1, "intro", { noNumber: [], digits: 3 });
     assert.deepEqual(names(mk), ["001_intro"]);
 });
+
+// ── セクション（A/B/C）の番号自動付与 ─────────────────────────
+const SOPTS = { noNumber: ["atk"], digits: 2, roundLetters: ["A", "B", "C"] };
+
+// 押した順にマーカーへ付けていき、最終的な名前を返す
+function pressInOrder(keys) {
+    const mk = prop(keys.map((_, i) => i * 10));
+    keys.forEach((k, i) => {
+        const name = (k.length === 1) ? Core.resolveSection(mk, i + 1, k, SOPTS) : k;
+        Core.setName(mk, i + 1, name, SOPTS);
+    });
+    return names(mk).map(Core.stripNumber);
+}
+
+test("resolveSection: A B C A B C D C → 1A 1B 1C 2A 2B 2C D 3C", () => {
+    assert.deepEqual(
+        pressInOrder(["A", "B", "C", "A", "B", "C", "D", "C"]),
+        ["1A", "1B", "1C", "2A", "2B", "2C", "D", "3C"]
+    );
+});
+
+test("resolveSection: intro や atk・空欄を挟んでも番号が続く", () => {
+    assert.deepEqual(
+        pressInOrder(["intro", "A", "B", "atk", "C", "Theme", "A", "C", "outro"]),
+        ["intro", "1A", "1B", "atk", "1C", "Theme", "2A", "2C", "outro"]
+    );
+});
+
+test("resolveSection: D・E は番号なし", () => {
+    assert.deepEqual(pressInOrder(["A", "D", "E", "B"]), ["1A", "D", "E", "1B"]);
+});
+
+test("resolveSection: 同じ文字が続くと次の番号になる", () => {
+    assert.deepEqual(pressInOrder(["C", "C", "C"]), ["1C", "2C", "3C"]);
+});
+
+test("resolveSection: 前のマーカーだけを見る（途中の付け直し）", () => {
+    const mk = prop([0, 10, 20, 30]);
+    ["1A", "1B", "2A", "2B"].forEach((n, i) => Core.setName(mk, i + 1, n, SOPTS));
+    // 3番目を見直す: 前は 1B → A は次の番号
+    assert.equal(Core.resolveSection(mk, 3, "A", SOPTS), "2A");
+    // 2番目を見直す: 前は 1A → C は同じ番号
+    assert.equal(Core.resolveSection(mk, 2, "C", SOPTS), "1C");
+    // 先頭: 前に何もない
+    assert.equal(Core.resolveSection(mk, 1, "B", SOPTS), "1B");
+});
+
+test("resolveSection: 2桁の番号も扱える", () => {
+    const mk = prop([0, 10]);
+    Core.setName(mk, 1, "10C", SOPTS);
+    assert.equal(Core.resolveSection(mk, 2, "A", SOPTS), "11A");
+});

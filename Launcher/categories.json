@@ -1,51 +1,76 @@
 {
-  "order": [
-    "SplitByDistance",
-    "CropLayersToCompSize",
-    "CueCutter",
-    "GridChartMaker",
-    "AutoCropComposition",
-    "CompSettingsChanger",
-    "LoopComp",
-    "LoopPrecomp",
-    "RandomizeLayerStart",
-    "BPMMaker",
-    "MarkerNamer",
-    "ExpressionToMatchName",
-    "InsertRenderToSameNameComp",
-    "Renamer",
-    "FileViewer"
+  "_comment": "カテゴリ名・表示順・ボタンの説明。項目の意味は Launcher.core.js の先頭を参照。他人製スクリプトの設定はここではなく、他人製フォルダ側の launcher.json に書く。",
+  "categoryOrder": [
+    "コンプ・レイヤー",
+    "マーカー・音楽",
+    "テキスト",
+    "エクスプレッション",
+    "ループ・タイム",
+    "配置・3D・モーション",
+    "エフェクト・生成",
+    "書き出し・管理",
+    "ユーティリティ"
+  ],
+  "excludeDirs": [
+    "Illustrator",
+    "MarkerCopy"
   ],
   "categories": {
-    "SplitByDistance": "01comp_layer",
-    "CropLayersToCompSize": "01comp_layer",
-    "CueCutter": "01comp_layer",
-    "GridChartMaker": "01comp_layer",
-    "AutoCropComposition": "02comp_set",
-    "CompSettingsChanger": "02comp_set",
-    "LoopComp": "02comp_set",
-    "LoopPrecomp": "02comp_set",
-    "RandomizeLayerStart": "03layer_animation",
-    "BPMMaker": "03layer_animation",
-    "MarkerNamer": "03layer_animation",
-    "ExpressionToMatchName": "05Expression",
-    "InsertRenderToSameNameComp": "06Export_data",
-    "FileViewer": "08Viewer"
+    "SplitByDistance": "コンプ・レイヤー",
+    "CropLayersToCompSize": "コンプ・レイヤー",
+    "GridChartMaker": "コンプ・レイヤー",
+    "AutoCropComposition": "コンプ・レイヤー",
+    "CompSettingsChanger": "コンプ・レイヤー",
+    "CueCutter": "マーカー・音楽",
+    "BPMMaker": "マーカー・音楽",
+    "MarkerNamer": "マーカー・音楽",
+    "AudioStereoMixComp": "マーカー・音楽",
+    "ExportMarkerFrames": "書き出し・管理",
+    "ExpressionToMatchName": "エクスプレッション",
+    "LoopComp": "ループ・タイム",
+    "LoopPrecomp": "ループ・タイム",
+    "RandomizeLayerStart": "ループ・タイム",
+    "InsertRenderToSameNameComp": "書き出し・管理",
+    "Renamer": "ユーティリティ",
+    "FileViewer": "ユーティリティ",
+    "ProjectSetup": "ユーティリティ",
+    "LiveComp": "コンプ・レイヤー"
   },
   "labels": {
-    "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expression → MatchName 変換",
-    "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "元のExpressionに戻す",
-    "AutoCropComposition/AutoCropComposition.jsx": "コンポを自動クロップ",
-    "CompSettingsChanger/C7_CompSettingsChanger.jsx": "コンポ設定を一括変更（幅/高さ/フレームレート/長さ）",
+    "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expressionを言語に依存しない形に変換",
+    "ExpressionToMatchName/C7_RevertToOriginalExpression.jsx": "↑の変換を元に戻す",
+    "AutoCropComposition/AutoCropComposition.jsx": "コンポを中身に合わせて自動クロップ",
+    "CompSettingsChanger/C7_CompSettingsChanger.jsx": "コンポ設定を一括変更（サイズ/fps/長さ）",
     "CropLayersToCompSize/CropLayersToCompSize.jsx": "レイヤーを個別プリコンプ化",
+    "GridChartMaker/GridChartMaker.jsx": "グリッド・チャートを作成",
+    "SplitByDistance/SplitByDistance.jsx": "距離でレイヤーを分割",
     "LoopComp/LoopComp.jsx": "ループ複製コンポを作成（複製方式）",
-    "LoopPrecomp/LoopPrecomp.jsx": "ループ用プリコンプ作成（分割方式）",
-    "RandomizeLayerStart/RandomizeLayerStart.jsx": "開始位置をランダム化",
-    "CueCutter/CueCutter.jsx": "♪マーカーでコンポ分割（Cue Cutter）",
+    "LoopPrecomp/LoopPrecomp.jsx": "ループ用プリコンプを作成（分割方式）",
+    "RandomizeLayerStart/RandomizeLayerStart.jsx": "開始位置をランダムに散らす",
+    "CueCutter/CueCutter.jsx": "♪マーカーでコンポ分割",
+    "BPMMaker/BPMMaker.jsx": "BPMから目印を生成（マーカー/ヌル）",
+    "MarkerNamer/C7_MarkerNamer.jsx": "マーカー名付け（連番）＋コピー",
+    "AudioStereoMixComp/C7_AudioStereoMixComp.jsx": "ステレオミックス用コンプ（TC音源削除）",
+    "ExportMarkerFrames/ExportMarkerFrames.jsx": "コメント付きマーカーのフレーム数をtxt書き出し",
     "InsertRenderToSameNameComp/InsertRenderToSameNameComp.jsx": "同名コンポへレンダリング差し替え＋Solo",
-    "BPMMaker/BPMMaker.jsx": "BPM目印生成（マーカー/ヌルキーフレーム）",
-    "MarkerNamer/C7_MarkerNamer.jsx": "マーカー名付け（連番自動）＋コピー",
     "Renamer/Renamer.jsx": "レイヤー/アイテム名を一括リネーム",
-    "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー"
-  }
+    "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー",
+    "ProjectSetup/C7_ProjectSetup.jsx": "プロジェクト初期セットアップ（フォルダ＋♪コンプ）",
+    "LiveComp/C7_LiveComp.jsx": "LIVEコンポ作成（FHD＋黒平面＋画像＋LIVE文字）"
+  },
+  "startup": [
+    "C7_ProjectSetup.jsx",
+    "C7_LiveComp.jsx",
+    "C7_MarkerNamer.jsx",
+    "CueCutter.jsx"
+  ],
+  "initialUsage": {
+    "RandomizeLayerStart.jsx": 5,
+    "C7_ProjectSetup.jsx": 2
+  },
+  "frequentLimit": 12,
+  "recentDays": 7,
+  "frequentExclude": [
+    "ExportMarkerFrames.jsx"
+  ]
 }

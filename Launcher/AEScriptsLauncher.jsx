@@ -65,13 +65,53 @@
     var BADGE_COLOR = [0.58, 0.58, 0.60, 1];
     var BADGE_SIZE = 8;
 
+    // ── JSON の読み書き ──
+    // AE の ExtendScript には JSON が標準で入っていない（他のスクリプトが追加している
+    // ことが多いが、AE起動直後はまだ無いことがある）。無ければ自前の簡易版を使う。
+    var J = (typeof JSON !== "undefined" && JSON.parse && JSON.stringify) ? JSON : {
+        parse: function (text) {
+            // 自分で保存した設定・自分のフォルダの設定ファイルだけを読む前提
+            return eval("(" + text + ")");
+        },
+        stringify: function (value) {
+            function str(v) {
+                if (v === null || v === undefined) return "null";
+                var t = typeof v;
+                if (t === "number") return isFinite(v) ? String(v) : "null";
+                if (t === "boolean") return v ? "true" : "false";
+                if (t === "string") {
+                    return '"' + v.replace(/[\\"\u0000-\u001f]/g, function (c) {
+                        if (c === "\\") return "\\\\";
+                        if (c === '"') return '\\"';
+                        var h = c.charCodeAt(0).toString(16);
+                        return "\\u" + "0000".substring(h.length) + h;
+                    }) + '"';
+                }
+                if (v instanceof Array) {
+                    var a = [];
+                    for (var i = 0; i < v.length; i++) a.push(str(v[i]));
+                    return "[" + a.join(",") + "]";
+                }
+                if (t === "object") {
+                    var o = [];
+                    for (var k in v) {
+                        if (v.hasOwnProperty(k) && typeof v[k] !== "function") o.push(str(k) + ":" + str(v[k]));
+                    }
+                    return "{" + o.join(",") + "}";
+                }
+                return "null";
+            }
+            return str(value);
+        }
+    };
+
     var coreLoadedFrom = null; // 現在ロード済みのLauncher.core.jsのfsName（再ロード判定用）
 
     // ── 設定の読み書き ──
     function readJsonSetting(key) {
         try {
             if (app.settings.haveSetting(SETTINGS_SECTION, key)) {
-                var arr = JSON.parse(app.settings.getSetting(SETTINGS_SECTION, key));
+                var arr = J.parse(app.settings.getSetting(SETTINGS_SECTION, key));
                 if (arr instanceof Array) return arr;
             }
         } catch (e) {}
@@ -105,7 +145,7 @@
     }
 
     function saveJsonSetting(key, value) {
-        try { app.settings.saveSetting(SETTINGS_SECTION, key, JSON.stringify(value)); } catch (e) {}
+        try { app.settings.saveSetting(SETTINGS_SECTION, key, J.stringify(value)); } catch (e) {}
     }
 
     function saveSelectedCategory(name) {
@@ -140,7 +180,7 @@
     function readJsonFile(file) {
         var text = readTextFile(file);
         if (text === null) return null;
-        try { return JSON.parse(text); } catch (e) { return null; }
+        try { return J.parse(text); } catch (e) { return null; }
     }
 
     // ── 使用回数（Folder.userData に保存。リポジトリには入らない） ──
@@ -160,7 +200,7 @@
             var f = usageFile();
             f.encoding = "UTF-8";
             if (!f.open("w")) return;
-            f.write(JSON.stringify(usage));
+            f.write(J.stringify(usage));
             f.close();
         } catch (e) {}
     }

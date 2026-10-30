@@ -51,7 +51,7 @@
     "BPMMaker/BPMMaker.jsx": "BPMから目印を生成（マーカー/ヌル）",
     "MarkerNamer/C7_MarkerNamer.jsx": "マーカー名付け（連番）＋コピー",
     "AudioStereoMixComp/C7_AudioStereoMixComp.jsx": "ステレオミックス用コンプ（TC音源削除）",
-    "ExportMarkerFrames/ExportMarkerFrames.jsx": "コメント付きマーカーのフレーム数をtxt書き出し",
+    "ExportMarkerFrames/ExportMarkerFrames.jsx": "マーカーをCSV書き出し（フレーム・コメント）",
     "InsertRenderToSameNameComp/InsertRenderToSameNameComp.jsx": "同名コンポへレンダリング差し替え＋Solo",
     "Renamer/Renamer.jsx": "レイヤー/アイテム名を一括リネーム",
     "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー",

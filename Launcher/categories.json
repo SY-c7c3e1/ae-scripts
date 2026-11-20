@@ -35,7 +35,8 @@
     "FileViewer": "ユーティリティ",
     "ProjectSetup": "ユーティリティ",
     "LiveComp": "コンプ・レイヤー",
-    "BlRenderImport": "書き出し・管理"
+    "BlRenderImport": "書き出し・管理",
+    "PixelEdgeWipe": "エフェクト・生成"
   },
   "labels": {
     "ExpressionToMatchName/C7_ExpressionToMatchName.jsx": "Expressionを言語に依存しない形に変換",
@@ -58,7 +59,8 @@
     "FileViewer/FileViewer.jsx": "Word/PDF/Excelビューワー",
     "ProjectSetup/C7_ProjectSetup.jsx": "プロジェクト初期セットアップ（フォルダ＋♪コンプ）",
     "LiveComp/C7_LiveComp.jsx": "LIVEコンポ作成（FHD＋黒平面＋画像＋LIVE文字）",
-    "BlRenderImport/C7_BlRenderImport.jsx": "Blenderの連番を【Bl-render】へ一括読み込み"
+    "BlRenderImport/C7_BlRenderImport.jsx": "Blenderの連番を【Bl-render】へ一括読み込み",
+    "PixelEdgeWipe/C7_PixelEdgeWipe.jsx": "ピクセル状エッジのワイプ（選択レイヤー）"
   },
   "startup": [
     "C7_ProjectSetup.jsx",
